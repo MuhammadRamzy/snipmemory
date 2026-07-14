@@ -32,6 +32,7 @@ export const AppProvider = ({ children }) => {
   const [currentAdmin, setCurrentAdmin] = useState(null);
   const [salonMode, setSalonMode] = useState('barber');
   const [tempSignup, setTempSignup] = useState(null);
+  const [theme, setTheme] = useState('charcoal');
 
   // Load from localStorage on client-mount
   useEffect(() => {
@@ -54,6 +55,7 @@ export const AppProvider = ({ children }) => {
       getStored('current_admin', setCurrentAdmin);
       getStored('salon_mode', setSalonMode);
       getStored('temp_signup', setTempSignup);
+      getStored('theme', setTheme);
       setIsLoaded(true);
     } catch (e) {
       console.error("Local storage load failed", e);
@@ -109,6 +111,15 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     if (isLoaded) localStorage.setItem('snipmem_temp_signup', JSON.stringify(tempSignup));
   }, [tempSignup, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem('snipmem_theme', JSON.stringify(theme));
+      if (typeof document !== 'undefined') {
+        document.documentElement.setAttribute('data-theme', theme);
+      }
+    }
+  }, [theme, isLoaded]);
 
   // --- Login Operations ---
   const loginSalon = (email, password) => {
@@ -333,6 +344,30 @@ export const AppProvider = ({ children }) => {
     setPayments((prev) => [...prev, newPayment]);
   };
 
+  const updateSalonSettings = (name, ownerName, address, cadenceDays) => {
+    if (!currentSalon) return;
+    setSalons((prev) =>
+      prev.map((s) =>
+        s.id === currentSalon.id
+          ? {
+              ...s,
+              name,
+              ownerName,
+              address,
+              reminderCadenceDaysDefault: Number(cadenceDays)
+            }
+          : s
+      )
+    );
+    setCurrentSalon((prev) => ({
+      ...prev,
+      name,
+      ownerName,
+      address,
+      reminderCadenceDaysDefault: Number(cadenceDays)
+    }));
+  };
+
   // --- Platform Admin Operations ---
   const changeSalonStatus = (salonId, status) => {
     setSalons((prev) =>
@@ -389,6 +424,8 @@ export const AppProvider = ({ children }) => {
         currentAdmin,
         salonMode,
         tempSignup,
+        theme,
+        setTheme,
         setSalonMode,
         loginSalon,
         loginAdmin,
@@ -402,6 +439,7 @@ export const AppProvider = ({ children }) => {
         addStaffMember,
         removeStaffMember,
         changeSubscription,
+        updateSalonSettings,
         changeSalonStatus,
         adminChangeSalonPlan,
         updatePricingTiers,

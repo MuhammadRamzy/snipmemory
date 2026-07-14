@@ -27,3 +27,84 @@
   --color-error-color: #ef4444;
   --color-error-soft: rgba(239, 68, 68, 0.1);
 }
+
+/* Custom UI/UX Themes Configuration */
+:root, [data-theme="charcoal"] {
+  --bg-primary: #0c0c0e;
+  --bg-secondary: #141418;
+  --bg-tertiary: #1b1b22;
+  --accent-color: #d97706;
+  --accent-hover: #b45309;
+  --accent-soft: rgba(217, 119, 6, 0.15);
+  
+  --color-bg-primary: #0c0c0e;
+  --color-bg-secondary: #141418;
+  --color-bg-tertiary: #1b1b22;
+  --color-accent-color: #d97706;
+  --color-accent-hover: #b45309;
+  --color-accent-soft: rgba(217, 119, 6, 0.15);
+}
+
+[data-theme="barber"] {
+  --bg-primary: #0a0e17;
+  --bg-secondary: #111827;
+  --bg-tertiary: #1f2937;
+  --accent-color: #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-soft: rgba(59, 130, 246, 0.15);
+  
+  --color-bg-primary: #0a0e17;
+  --color-bg-secondary: #111827;
+  --color-bg-tertiary: #1f2937;
+  --color-accent-color: #3b82f6;
+  --color-accent-hover: #2563eb;
+  --color-accent-soft: rgba(59, 130, 246, 0.15);
+}
+
+[data-theme="emerald"] {
+  --bg-primary: #05140d;
+  --bg-secondary: #09261a;
+  --bg-tertiary: #113f2c;
+  --accent-color: #10b981;
+  --accent-hover: #059669;
+  --accent-soft: rgba(16, 185, 129, 0.15);
+  
+  --color-bg-primary: #05140d;
+  --color-bg-secondary: #09261a;
+  --color-bg-tertiary: #113f2c;
+  --color-accent-color: #10b981;
+  --color-accent-hover: #059669;
+  --color-accent-soft: rgba(16, 185, 129, 0.15);
+}
+
+[data-theme="rose"] {
+  --bg-primary: #1c0a10;
+  --bg-secondary: #2d121c;
+  --bg-tertiary: #441c2c;
+  --accent-color: #ec4899;
+  --accent-hover: #db2777;
+  --accent-soft: rgba(236, 72, 153, 0.15);
+  
+  --color-bg-primary: #1c0a10;
+  --color-bg-secondary: #2d121c;
+  --color-bg-tertiary: #441c2c;
+  --color-accent-color: #ec4899;
+  --color-accent-hover: #db2777;
+  --color-accent-soft: rgba(236, 72, 153, 0.15);
+}
+
+[data-theme="cyberpunk"] {
+  --bg-primary: #0f051d;
+  --bg-secondary: #18092d;
+  --bg-tertiary: #2b1150;
+  --accent-color: #d946ef;
+  --accent-hover: #c084fc;
+  --accent-soft: rgba(217, 70, 239, 0.15);
+  
+  --color-bg-primary: #0f051d;
+  --color-bg-secondary: #18092d;
+  --color-bg-tertiary: #2b1150;
+  --color-accent-color: #d946ef;
+  --color-accent-hover: #c084fc;
+  --color-accent-soft: rgba(217, 70, 239, 0.15);
+}

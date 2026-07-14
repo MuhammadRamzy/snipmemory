@@ -98,3 +98,28 @@ Make sure you have [Node.js](https://nodejs.org) (v18+) and [npm](https://npmjs.
    ```bash
    npm run build
    ```
+
+---
+
+## 🔑 Demo Access Credentials
+
+For ease of testing, the system is seeded with the following sandbox accounts:
+
+### Salon Owner Workspace Accounts
+*   **Active Pro Salon**:
+    *   **Email**: `owner@classiccuts.com`
+    *   **Password**: `password123`
+*   **Trial Growth Salon**:
+    *   **Email**: `owner@fadelab.com`
+    *   **Password**: `password123`
+*   **Past Due Subscription Salon** (triggers reminder banner):
+    *   **Email**: `owner@goldenscissors.com`
+    *   **Password**: `password123`
+
+### Owner PIN Gates
+*   **Owner PIN Code** (used to switch from Stylist/Barber mode to the Owner Dashboard): `1234` or `0000`
+
+### Platform Administration Portal
+*   **Access URL**: `/admin/login`
+*   **Email**: `admin@snipmemory.com`
+*   **Password**: `admin`

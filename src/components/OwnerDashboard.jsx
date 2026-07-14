@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '../context/AppContext';
 
@@ -14,16 +14,36 @@ export default function OwnerDashboard({ tab }) {
     payments, 
     reminderLogs,
     plans,
+    theme,
+    setTheme,
     addStaffMember,
     removeStaffMember,
     changeSubscription,
-    sendReminderLog
+    sendReminderLog,
+    updateSalonSettings
   } = useApp();
 
   // Settings states
   const [newStylistName, setNewStylistName] = useState('');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradePlanId, setUpgradePlanId] = useState('');
+
+  // General settings state
+  const [salonName, setSalonName] = useState('');
+  const [ownerName, setOwnerName] = useState('');
+  const [salonAddress, setSalonAddress] = useState('');
+  const [reminderCadence, setReminderCadence] = useState(30);
+  const [settingsSuccess, setSettingsSuccess] = useState(false);
+
+  // Sync state values when currentSalon is populated or switched
+  useEffect(() => {
+    if (currentSalon) {
+      setSalonName(currentSalon.name || '');
+      setOwnerName(currentSalon.ownerName || '');
+      setSalonAddress(currentSalon.address || '');
+      setReminderCadence(currentSalon.reminderCadenceDaysDefault || 30);
+    }
+  }, [currentSalon]);
 
   // Clients table search/sort
   const [clientSearch, setClientSearch] = useState('');
@@ -34,6 +54,15 @@ export default function OwnerDashboard({ tab }) {
   const [activeReminderCustomer, setActiveReminderCustomer] = useState(null);
   const [reminderMessage, setReminderMessage] = useState('');
   const [reminderSuccessMessage, setReminderSuccessMessage] = useState('');
+
+  const handleSaveGeneralSettings = (e) => {
+    e.preventDefault();
+    updateSalonSettings(salonName, ownerName, salonAddress, reminderCadence);
+    setSettingsSuccess(true);
+    setTimeout(() => {
+      setSettingsSuccess(false);
+    }, 4000);
+  };
 
   if (!currentSalon) return null;
 
@@ -379,6 +408,77 @@ export default function OwnerDashboard({ tab }) {
       {/* --- SETTINGS VIEW --- */}
       {tab === 'settings' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {/* General Salon Profile Settings */}
+          <div className="card">
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Salon Profile & Preferences</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+              Update your workspace information and client follow-up timing defaults.
+            </p>
+
+            {settingsSuccess && (
+              <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success-color)', padding: '0.75rem', borderRadius: '6px', fontSize: '0.875rem', marginBottom: '1.5rem', border: '1px solid var(--success-color)' }}>
+                ✓ General salon preferences saved successfully!
+              </div>
+            )}
+
+            <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div className="grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Salon Name</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={salonName}
+                    onChange={(e) => setSalonName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Owner Name</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={ownerName}
+                    onChange={(e) => setOwnerName(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Salon Address</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={salonAddress}
+                  onChange={(e) => setSalonAddress(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group" style={{ maxWidth: '360px' }}>
+                <label className="form-label">Default Reminder Cadence (Days)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <input
+                    type="number"
+                    className="form-control"
+                    value={reminderCadence}
+                    onChange={(e) => setReminderCadence(Number(e.target.value))}
+                    min="1"
+                    required
+                  />
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>days triggers status</span>
+                </div>
+              </div>
+
+              <div>
+                <button type="submit" className="btn btn-primary">
+                  Save Preferences
+                </button>
+              </div>
+            </form>
+          </div>
+
           {/* Stylist Stations Manager */}
           <div className="card">
             <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Stylist Stations & Staff</h3>
@@ -417,6 +517,43 @@ export default function OwnerDashboard({ tab }) {
                     Remove
                   </button>
                 </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Salon Space Theme Card */}
+          <div className="card">
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Salon Space Theme</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1.25rem' }}>
+              Select the color theme of your salon workspace app. This overrides styling elements globally.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
+              {[
+                { id: 'charcoal', name: 'Charcoal Gold 🖤', color: '#d97706' },
+                { id: 'barber', name: 'Classic Barber 💈', color: '#3b82f6' },
+                { id: 'emerald', name: 'Emerald Luxe 🟢', color: '#10b981' },
+                { id: 'rose', name: 'Rose Bronze 🌸', color: '#ec4899' },
+                { id: 'cyberpunk', name: 'Cyberpunk Fade ⚡', color: '#d946ef' }
+              ].map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setTheme(t.id)}
+                  style={{
+                    padding: '1rem',
+                    background: 'var(--bg-tertiary)',
+                    border: theme === t.id ? `2px solid ${t.color}` : '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    transition: 'all 0.2s ease',
+                    transform: theme === t.id ? 'scale(1.03)' : 'scale(1)'
+                  }}
+                >
+                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: t.color, margin: '0 auto 0.5rem auto' }} />
+                  <span style={{ fontSize: '0.8125rem', fontWeight: theme === t.id ? '600' : 'normal', color: 'var(--text-primary)' }}>{t.name}</span>
+                </button>
               ))}
             </div>
           </div>
