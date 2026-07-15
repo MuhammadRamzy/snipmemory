@@ -10,6 +10,7 @@ This codebase is built on **Next.js App Router** with **React 19**, **Tailwind C
 
 ### 1. Marketing & Booking Surface
 *   **Catchy, Cool & Live Landing Page**: Features high-fidelity design layout, active subscription toggles (monthly vs. annual), and an interactive simulator demonstrating the customer database lookup and the face-blur camera pipeline.
+*   **Client Style History Portal**: An interactive public dashboard on the main landing page allowing clients to lookup their multi-salon haircut visual history log using their mobile number and a secure simulated SMS OTP bypass passcode (`123456`).
 *   **Onboarding Flow**: 3-step progressive onboarding wizard to configure salon profiles, stylist station rosters, and custom reminder timelines.
 *   **Discovery Portal (`/discovery`)**: Public search registry for clients to find registered salons, browse reviews, and view active stylist teams. Features a direct access gateway pointing to the salon's workspace.
 
