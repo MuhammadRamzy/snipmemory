@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { useApp } from '../../context/AppContext';
+import { useRouter, useParams, usePathname } from 'next/navigation';
+import { useApp } from '../../../context/AppContext';
 
 export default function SalonLayout({ children }) {
   const router = useRouter();
+  const params = useParams();
+  const salonId = params.salonId;
   const pathname = usePathname();
   const { currentSalon, salonMode, setSalonMode, logout, announcement } = useApp();
   
@@ -15,17 +17,22 @@ export default function SalonLayout({ children }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   useEffect(() => {
-    // Wait for the context to load from localStorage before redirecting
-    // But since this runs only on the client, checking currentSalon is safe.
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('snipmem_current_salon');
-      if (!stored && !currentSalon) {
-        router.push('/login');
+      const storedSalon = stored ? JSON.parse(stored) : null;
+      
+      // Multi-tenant check: if not logged in or logged into a different salon, redirect to that salon's specific login route
+      if (!currentSalon && !storedSalon) {
+        router.push(`/salon/${salonId}/login`);
+      } else if (currentSalon && currentSalon.id !== salonId) {
+        router.push(`/salon/${salonId}/login`);
+      } else if (storedSalon && storedSalon.id !== salonId) {
+        router.push(`/salon/${salonId}/login`);
       }
     }
-  }, [currentSalon, router]);
+  }, [currentSalon, salonId, router]);
 
-  if (!currentSalon) {
+  if (!currentSalon || currentSalon.id !== salonId) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)' }}>
         <div className="animate-fade" style={{ color: 'var(--text-secondary)' }}>Loading salon workspace...</div>
@@ -40,7 +47,7 @@ export default function SalonLayout({ children }) {
       setPinError('');
     } else {
       setSalonMode('barber');
-      router.push('/app/barber');
+      router.push(`/salon/${salonId}/barber`);
     }
   };
 
@@ -49,7 +56,7 @@ export default function SalonLayout({ children }) {
     if (pinInput === '1234' || pinInput === '0000') {
       setSalonMode('owner');
       setShowPinGate(false);
-      router.push('/app/dashboard');
+      router.push(`/salon/${salonId}/dashboard`);
     } else {
       setPinError('Invalid PIN code. Access denied. (Use 1234 for demo)');
     }
@@ -101,32 +108,32 @@ export default function SalonLayout({ children }) {
             {salonMode === 'owner' && (
               <nav style={{ display: 'flex', gap: '0.5rem' }} className="owner-sub-nav">
                 <button 
-                  className={`btn btn-sm ${pathname === '/app/dashboard' ? 'btn-primary' : 'btn-text'}`}
-                  onClick={() => router.push('/app/dashboard')}
+                  className={`btn btn-sm ${pathname === `/salon/${salonId}/dashboard` ? 'btn-primary' : 'btn-text'}`}
+                  onClick={() => router.push(`/salon/${salonId}/dashboard`)}
                 >
                   Metrics
                 </button>
                 <button 
-                  className={`btn btn-sm ${pathname === '/app/clients' ? 'btn-primary' : 'btn-text'}`}
-                  onClick={() => router.push('/app/clients')}
+                  className={`btn btn-sm ${pathname === `/salon/${salonId}/clients` ? 'btn-primary' : 'btn-text'}`}
+                  onClick={() => router.push(`/salon/${salonId}/clients`)}
                 >
                   Clients
                 </button>
                 <button 
-                  className={`btn btn-sm ${pathname === '/app/reminders' ? 'btn-primary' : 'btn-text'}`}
-                  onClick={() => router.push('/app/reminders')}
+                  className={`btn btn-sm ${pathname === `/salon/${salonId}/reminders` ? 'btn-primary' : 'btn-text'}`}
+                  onClick={() => router.push(`/salon/${salonId}/reminders`)}
                 >
                   Reminders
                 </button>
                 <button 
-                  className={`btn btn-sm ${pathname === '/app/billing' ? 'btn-primary' : 'btn-text'}`}
-                  onClick={() => router.push('/app/billing')}
+                  className={`btn btn-sm ${pathname === `/salon/${salonId}/billing` ? 'btn-primary' : 'btn-text'}`}
+                  onClick={() => router.push(`/salon/${salonId}/billing`)}
                 >
                   Billing
                 </button>
                 <button 
-                  className={`btn btn-sm ${pathname === '/app/settings' ? 'btn-primary' : 'btn-text'}`}
-                  onClick={() => router.push('/app/settings')}
+                  className={`btn btn-sm ${pathname === `/salon/${salonId}/settings` ? 'btn-primary' : 'btn-text'}`}
+                  onClick={() => router.push(`/salon/${salonId}/settings`)}
                 >
                   Settings
                 </button>
@@ -239,36 +246,36 @@ export default function SalonLayout({ children }) {
       {salonMode === 'owner' && (
         <div className="mobile-bottom-nav">
           <button 
-            className={`mobile-nav-tab ${pathname === '/app/dashboard' ? 'active' : ''}`}
-            onClick={() => router.push('/app/dashboard')}
+            className={`mobile-nav-tab ${pathname === `/salon/${salonId}/dashboard` ? 'active' : ''}`}
+            onClick={() => router.push(`/salon/${salonId}/dashboard`)}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
             <span>Metrics</span>
           </button>
           <button 
-            className={`mobile-nav-tab ${pathname === '/app/clients' ? 'active' : ''}`}
-            onClick={() => router.push('/app/clients')}
+            className={`mobile-nav-tab ${pathname === `/salon/${salonId}/clients` ? 'active' : ''}`}
+            onClick={() => router.push(`/salon/${salonId}/clients`)}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span>Clients</span>
           </button>
           <button 
-            className={`mobile-nav-tab ${pathname === '/app/reminders' ? 'active' : ''}`}
-            onClick={() => router.push('/app/reminders')}
+            className={`mobile-nav-tab ${pathname === `/salon/${salonId}/reminders` ? 'active' : ''}`}
+            onClick={() => router.push(`/salon/${salonId}/reminders`)}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
             <span>Reminders</span>
           </button>
           <button 
-            className={`mobile-nav-tab ${pathname === '/app/billing' ? 'active' : ''}`}
-            onClick={() => router.push('/app/billing')}
+            className={`mobile-nav-tab ${pathname === `/salon/${salonId}/billing` ? 'active' : ''}`}
+            onClick={() => router.push(`/salon/${salonId}/billing`)}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
             <span>Billing</span>
           </button>
           <button 
-            className={`mobile-nav-tab ${pathname === '/app/settings' ? 'active' : ''}`}
-            onClick={() => router.push('/app/settings')}
+            className={`mobile-nav-tab ${pathname === `/salon/${salonId}/settings` ? 'active' : ''}`}
+            onClick={() => router.push(`/salon/${salonId}/settings`)}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             <span>Settings</span>

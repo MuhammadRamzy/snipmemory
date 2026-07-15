@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useApp } from '../../../context/AppContext';
+import { useApp } from '../../../../context/AppContext';
 
 const SVG_GUIDES = {
   front: (

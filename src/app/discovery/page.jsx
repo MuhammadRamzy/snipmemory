@@ -203,6 +203,21 @@ export default function DiscoveryPage() {
               </button>
             </div>
 
+            {/* Salon Team Workspace Callout */}
+            <div style={{ background: 'rgba(99, 102, 241, 0.08)', border: '1px solid var(--accent-color)', borderRadius: '8px', padding: '0.85rem 1rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <div>
+                <strong style={{ fontSize: '0.875rem', color: 'var(--text-primary)', display: 'block' }}>Salon Workspace Portal</strong>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Access the private stylist camera station and analytics dashboard for {selectedSalon.name}.</span>
+              </div>
+              <button 
+                className="btn btn-primary btn-sm"
+                onClick={() => router.push(`/salon/${selectedSalon.id}/login`)}
+                style={{ fontSize: '0.8125rem', whiteSpace: 'nowrap' }}
+              >
+                Workspace Login &rarr;
+              </button>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
               
               {/* Stylists roster */}

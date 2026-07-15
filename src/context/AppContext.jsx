@@ -385,6 +385,36 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const adminAddStaff = (salonId, name) => {
+    const newStaff = {
+      id: `staff-${Date.now()}`,
+      salonId,
+      name
+    };
+    setStaff((prev) => [...prev, newStaff]);
+  };
+
+  const adminAddInvoice = (salonId, amount) => {
+    const newPayment = {
+      id: `pay-${Date.now()}`,
+      salonId,
+      amount: Number(amount),
+      date: new Date().toISOString(),
+      status: 'Success',
+      planId: salons.find(s => s.id === salonId)?.planId || 'starter'
+    };
+    setPayments((prev) => [...prev, newPayment]);
+  };
+
+  const adminUpdateSalonDetails = (salonId, fields) => {
+    setSalons((prev) =>
+      prev.map((s) => (s.id === salonId ? { ...s, ...fields } : s))
+    );
+    if (currentSalon && currentSalon.id === salonId) {
+      setCurrentSalon((prev) => ({ ...prev, ...fields }));
+    }
+  };
+
   const updatePricingTiers = (newPlans) => {
     setPlans(newPlans);
   };
@@ -442,6 +472,9 @@ export const AppProvider = ({ children }) => {
         updateSalonSettings,
         changeSalonStatus,
         adminChangeSalonPlan,
+        adminAddStaff,
+        adminAddInvoice,
+        adminUpdateSalonDetails,
         updatePricingTiers,
         updateAnnouncement,
         resetAllData

@@ -337,7 +337,7 @@ export default function OwnerDashboard({ tab }) {
                         <button 
                           className="btn btn-secondary btn-sm"
                           onClick={() => {
-                            router.push(`/app/barber?customerId=${client.id}`);
+                            router.push(`/salon/${currentSalon.id}/barber?customerId=${client.id}`);
                             setTimeout(() => {
                               const event = new CustomEvent('select-customer', { detail: client });
                               window.dispatchEvent(event);

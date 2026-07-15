@@ -1,40 +1,39 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useApp } from '../../context/AppContext';
+import { useRouter, useParams } from 'next/navigation';
+import { useApp } from '../../../../context/AppContext';
 
-export default function Login() {
+export default function SalonTenantLogin() {
   const router = useRouter();
-  const { loginSalon, setSalonMode, salons, staff } = useApp();
+  const params = useParams();
+  const salonId = params.salonId;
+  const { salons, staff, loginSalon, setSalonMode } = useApp();
 
+  const [salon, setSalon] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Form states
   const [activeTab, setActiveTab] = useState('owner'); // 'owner' | 'stylist'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-
-  // Stylist login states
-  const [selectedSalonId, setSelectedSalonId] = useState('');
   const [selectedStylistId, setSelectedStylistId] = useState('');
   const [stationPin, setStationPin] = useState('');
-
-  // Forgot password states
+  const [error, setError] = useState('');
   const [forgotMode, setForgotMode] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
 
-  // Filter salons that are active/trial
-  const availableSalons = salons ? salons.filter(s => s.subscriptionStatus !== 'Cancelled') : [];
-
-  // Filter staff based on selected salon
-  const availableStaff = staff ? staff.filter(st => st.salonId === selectedSalonId) : [];
-
-  // Auto-select first salon/staff when list changes
   useEffect(() => {
-    if (availableSalons.length > 0 && !selectedSalonId) {
-      setSelectedSalonId(availableSalons[0].id);
+    if (salons) {
+      const found = salons.find(s => s.id === salonId);
+      setSalon(found || null);
+      setLoading(false);
     }
-  }, [availableSalons, selectedSalonId]);
+  }, [salons, salonId]);
+
+  // Filter stylists for this salon only
+  const availableStaff = salon ? staff.filter(st => st.salonId === salon.id) : [];
 
   useEffect(() => {
     if (availableStaff.length > 0) {
@@ -44,20 +43,56 @@ export default function Login() {
     }
   }, [availableStaff]);
 
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)' }}>
+        <div style={{ color: 'var(--text-secondary)' }}>Verifying salon credentials...</div>
+      </div>
+    );
+  }
+
+  if (!salon) {
+    return (
+      <div className="flex-center" style={{ minHeight: '100vh', padding: '1.5rem', background: 'var(--bg-primary)' }}>
+        <div className="card card-premium animate-slide" style={{ maxWidth: '450px', width: '100%', textAlign: 'center', padding: '2.5rem' }}>
+          <div style={{ display: 'inline-flex', padding: '1rem', borderRadius: '50%', background: 'var(--error-soft)', color: 'var(--error-color)', marginBottom: '1.5rem' }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>Salon Portal Not Found</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: '1.6', marginBottom: '2rem' }}>
+            The requested salon path <strong>"{salonId}"</strong> does not exist in our systems. Please check the spelling or explore registered salons on the directory.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <button className="btn btn-primary btn-block" onClick={() => router.push('/discovery')}>
+              Search Salon Directory
+            </button>
+            <button className="btn btn-secondary btn-block" onClick={() => router.push('/')}>
+              Go to Landing Page
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleOwnerSubmit = (e) => {
     e.preventDefault();
     setError('');
 
     if (!email || !password) {
-      setError('Please enter your credentials.');
+      setError('Please enter your email/mobile and password.');
       return;
     }
 
     try {
       const logged = loginSalon(email, password);
-      // Direct owners straight to dashboard
-      setSalonMode('dashboard');
-      router.push('/app/dashboard');
+      // Double check that the logged in salon matches this tenant ID
+      if (logged.id !== salon.id) {
+        setError('Incorrect owner credentials for this salon shop.');
+        return;
+      }
+      setSalonMode('owner');
+      router.push(`/salon/${salon.id}/dashboard`);
     } catch (err) {
       setError(err.message || 'Login failed.');
     }
@@ -67,28 +102,21 @@ export default function Login() {
     e.preventDefault();
     setError('');
 
-    if (!selectedSalonId || !stationPin) {
-      setError('Please select a salon and enter the station access PIN.');
+    if (!selectedStylistId || !stationPin) {
+      setError('Please select your stylist profile and enter the PIN.');
       return;
     }
 
-    // Accept standard demo PINs 1234 or 0000
     if (stationPin !== '1234' && stationPin !== '0000') {
-      setError('Invalid station access PIN code.');
-      return;
-    }
-
-    const salon = availableSalons.find(s => s.id === selectedSalonId);
-    if (!salon) {
-      setError('Selected salon not found.');
+      setError('Invalid station access PIN code. (Use 1234 or 0000 for demo)');
       return;
     }
 
     try {
-      // Simulate stylist logging into the station session
+      // Log the stylist into this salon
       loginSalon(salon.email, salon.password);
       setSalonMode('barber');
-      router.push('/app/barber');
+      router.push(`/salon/${salon.id}/barber`);
     } catch (err) {
       setError(err.message || 'Failed to authenticate station.');
     }
@@ -111,17 +139,18 @@ export default function Login() {
         
         {/* Brand Header */}
         <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-          <div className="logo-brand" style={{ justifyContent: 'center', marginBottom: '0.5rem' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--accent-color)' }}>
-              <path d="M4 22V4c0-.5.2-1 .6-1.4C5 2.2 5.5 2 6 2h12c.5 0 1 .2 1.4.6.4.4.6.9.6 1.4v18l-8-4-8 4z" />
-            </svg>
-            Snip<span>Memory</span>
-          </div>
+          {salon.logoUrl ? (
+            <img src={salon.logoUrl} alt={salon.name} style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover', marginBottom: '0.75rem', border: '1px solid var(--border-color)' }} />
+          ) : (
+            <div style={{ display: 'inline-flex', padding: '0.75rem', borderRadius: '12px', background: 'var(--accent-soft)', color: 'var(--accent-color)', marginBottom: '0.75rem' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 22V4c0-.5.2-1 .6-1.4C5 2.2 5.5 2 6 2h12c.5 0 1 .2 1.4.6.4.4.6.9.6 1.4v18l-8-4-8 4z" /></svg>
+            </div>
+          )}
           <h2 style={{ fontSize: '1.25rem', fontWeight: '700' }}>
-            {forgotMode ? 'Recover Account' : 'Salon Workspace Access'}
+            {forgotMode ? 'Recover Account' : salon.name}
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem', marginTop: '0.25rem' }}>
-            Select portal entry pathway
+            {forgotMode ? 'Verify your identity' : 'Workspace Login'}
           </p>
         </div>
 
@@ -140,7 +169,7 @@ export default function Login() {
                 style={{ flex: 1, borderRadius: '6px', fontSize: '0.8125rem', padding: '0.5rem 0' }}
                 onClick={() => { setActiveTab('owner'); setError(''); }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{marginRight: '4px', verticalAlign: 'middle'}}><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> Owner Console
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{marginRight: '4px', verticalAlign: 'middle'}}><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> Owner Portal
               </button>
               <button
                 className={`btn btn-sm ${activeTab === 'stylist' ? 'btn-primary' : 'btn-text'}`}
@@ -151,7 +180,7 @@ export default function Login() {
               </button>
             </div>
 
-            {/* TAB 1: OWNER CONSOLE */}
+            {/* TAB 1: OWNER PORTAL */}
             {activeTab === 'owner' && (
               <form onSubmit={handleOwnerSubmit} className="animate-fade">
                 <div className="form-group">
@@ -159,7 +188,7 @@ export default function Login() {
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="owner@classiccuts.com"
+                    placeholder="owner@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -189,7 +218,7 @@ export default function Login() {
                 </div>
 
                 <button type="submit" className="btn btn-primary btn-block btn-lg" style={{ marginTop: '1.5rem', fontSize: '0.9375rem' }}>
-                  Enter Administrative Console
+                  Open Owner Panel
                 </button>
               </form>
             )}
@@ -198,27 +227,13 @@ export default function Login() {
             {activeTab === 'stylist' && (
               <form onSubmit={handleStylistSubmit} className="animate-fade">
                 <div className="form-group">
-                  <label className="form-label">Select Salon Shop</label>
-                  <select 
-                    className="form-select"
-                    value={selectedSalonId}
-                    onChange={(e) => setSelectedSalonId(e.target.value)}
-                    required
-                  >
-                    {availableSalons.map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Select Stylist Profile</label>
+                  <label className="form-label">Select Your Profile</label>
                   <select 
                     className="form-select"
                     value={selectedStylistId}
                     onChange={(e) => setSelectedStylistId(e.target.value)}
                     required
-                    disabled={!selectedSalonId || availableStaff.length === 0}
+                    disabled={availableStaff.length === 0}
                   >
                     {availableStaff.length > 0 ? (
                       availableStaff.map(st => (
@@ -245,7 +260,7 @@ export default function Login() {
                 </div>
 
                 <button type="submit" className="btn btn-primary btn-block btn-lg" style={{ marginTop: '1.5rem', fontSize: '0.9375rem' }}>
-                  Unlock Barber Station
+                  Unlock Stylist Workspace
                 </button>
               </form>
             )}
@@ -260,7 +275,7 @@ export default function Login() {
                   <input
                     type="email"
                     className="form-control"
-                    placeholder="owner@classiccuts.com"
+                    placeholder="owner@example.com"
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
                     required
@@ -281,28 +296,18 @@ export default function Login() {
                 </p>
               </div>
             )}
-
+            
             <button 
               type="button" 
-              className="btn btn-secondary btn-block" 
-              style={{ marginTop: '1rem' }}
-              onClick={() => {
-                setForgotMode(false);
-                setResetSent(false);
-                setResetEmail('');
-              }}
+              className="btn btn-secondary btn-block btn-sm" 
+              style={{ marginTop: '1rem' }} 
+              onClick={() => { setForgotMode(false); setResetSent(false); }}
             >
               Back to Login
             </button>
           </form>
         )}
 
-        <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-          Don't have a shop account?{' '}
-          <button className="btn-text" style={{ padding: 0, font: 'inherit', color: 'var(--accent-color)', cursor: 'pointer' }} onClick={() => router.push('/signup')}>
-            Start Free Trial
-          </button>
-        </div>
       </div>
     </div>
   );

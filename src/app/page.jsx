@@ -82,7 +82,6 @@ export default function LandingPage() {
             <a href="#pricing" className="nav-link" style={{ fontSize: '0.9375rem' }}>Pricing</a>
             <a href="#faq" className="nav-link" style={{ fontSize: '0.9375rem' }}>FAQ</a>
             <button className="btn btn-secondary btn-sm" onClick={() => router.push('/discovery')} style={{ borderColor: 'var(--accent-color)', color: 'var(--accent-color)' }}>Search Salons</button>
-            <button className="btn btn-secondary btn-sm" onClick={() => router.push('/login')}>Salon Login</button>
             <button className="btn btn-primary btn-sm" onClick={() => router.push('/signup')}>Start Trial</button>
           </nav>
         </div>

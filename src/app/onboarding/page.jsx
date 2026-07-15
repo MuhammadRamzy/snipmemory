@@ -51,7 +51,7 @@ export default function Onboarding() {
 
   const handleFinish = () => {
     completeOnboarding(address, logoUrl, staffList, cadence);
-    router.push('/app/dashboard');
+    router.push(`/salon/${currentSalon.id}/dashboard`);
   };
 
   return (
