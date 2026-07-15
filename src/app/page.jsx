@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '../context/AppContext';
 
@@ -9,6 +9,30 @@ export default function LandingPage() {
   const { plans } = useApp();
   const [billingInterval, setBillingInterval] = useState('monthly');
   const [activeFaq, setActiveFaq] = useState(null);
+
+  // Interactive Live Simulator States
+  const [simStep, setSimStep] = useState(1); // 1: Search, 2: Profile, 3: Camera Blur Demo
+  const [simPhone, setSimPhone] = useState('');
+  const [simFaceBlurred, setSimFaceBlurred] = useState(false);
+  const [simSuccessMsg, setSimSuccessMsg] = useState('');
+
+  // Simulate typing effect on mount
+  useEffect(() => {
+    if (simStep === 1) {
+      setSimPhone('');
+      const targetPhone = '(206) 555-0100';
+      let currentIdx = 0;
+      const interval = setInterval(() => {
+        if (currentIdx < targetPhone.length) {
+          setSimPhone(prev => prev + targetPhone[currentIdx]);
+          currentIdx++;
+        } else {
+          clearInterval(interval);
+        }
+      }, 100);
+      return () => clearInterval(interval);
+    }
+  }, [simStep]);
 
   const toggleFaq = (index) => {
     setActiveFaq(activeFaq === index ? null : index);
@@ -38,52 +62,237 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="animate-fade">
-      {/* Navigation */}
-      <header className="marketing-header">
-        <div className="container flex-between">
+    <div className="animate-fade" style={{ background: 'var(--bg-primary)', minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}>
+      
+      {/* Decorative Glowing Spotlights */}
+      <div style={{ position: 'absolute', top: '-10%', left: '30%', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.08)', filter: 'blur(80px)', pointerEvents: 'none', zIndex: 0 }} />
+      <div style={{ position: 'absolute', top: '40%', right: '-10%', width: '350px', height: '350px', borderRadius: '50%', background: 'rgba(59, 130, 246, 0.06)', filter: 'blur(70px)', pointerEvents: 'none', zIndex: 0 }} />
+
+      {/* Frosted Glass Navigation Header */}
+      <header className="marketing-header" style={{ position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid var(--border-color)', background: 'rgba(9, 10, 15, 0.8)', backdropFilter: 'blur(12px)' }}>
+        <div className="container flex-between" style={{ padding: '0.75rem 1.5rem' }}>
           <div className="logo-brand">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{color: 'var(--accent-color)'}}>
               <path d="M4 22V4c0-.5.2-1 .6-1.4C5 2.2 5.5 2 6 2h12c.5 0 1 .2 1.4.6.4.4.6.9.6 1.4v18l-8-4-8 4z"/>
             </svg>
             Snip<span>Memory</span>
           </div>
-          <nav className="nav-links">
-            <a href="#features" className="nav-link">Features</a>
-            <a href="#pricing" className="nav-link">Pricing</a>
-            <a href="#faq" className="nav-link">FAQ</a>
+          <nav className="nav-links" style={{ gap: '1.5rem' }}>
+            <a href="#features" className="nav-link" style={{ fontSize: '0.9375rem' }}>Features</a>
+            <a href="#pricing" className="nav-link" style={{ fontSize: '0.9375rem' }}>Pricing</a>
+            <a href="#faq" className="nav-link" style={{ fontSize: '0.9375rem' }}>FAQ</a>
             <button className="btn btn-secondary btn-sm" onClick={() => router.push('/discovery')} style={{ borderColor: 'var(--accent-color)', color: 'var(--accent-color)' }}>Search Salons</button>
             <button className="btn btn-secondary btn-sm" onClick={() => router.push('/login')}>Salon Login</button>
-            <button className="btn btn-primary btn-sm" onClick={() => router.push('/signup')}>Start Free Trial</button>
+            <button className="btn btn-primary btn-sm" onClick={() => router.push('/signup')}>Start Trial</button>
           </nav>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="hero">
-        <div className="container" style={{maxWidth: '800px'}}>
-          <h1>Never forget a haircut again. Say their number, recreate their cut.</h1>
-          <p>
-            The premium B2B photo database for barbershops and salons. Take reference photos, store style notes, and send automated client retention reminders in seconds.
-          </p>
-          <div className="flex-center" style={{gap: '1rem', flexWrap: 'wrap'}}>
-            <button className="btn btn-primary btn-lg" onClick={() => router.push('/signup')}>Start 14-Day Free Trial</button>
-            <button className="btn btn-secondary btn-lg" onClick={() => router.push('/discovery')}>Browse Salon Directory & Reviews</button>
-          </div>
-          <div style={{marginTop: '4rem', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: '16px', background: 'rgba(255,255,255,0.01)', boxShadow: 'var(--shadow-premium)'}}>
-            <div style={{height: '350px', background: 'var(--bg-secondary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.05)', position: 'relative'}}>
-              <div style={{textAlign: 'center', padding: '2rem'}}>
-                <div style={{display: 'inline-flex', padding: '0.75rem', borderRadius: '50%', background: 'var(--accent-soft)', color: 'var(--accent-color)', marginBottom: '1rem'}}>
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="m10 15 5-3-5-3v6Z"/></svg>
-                </div>
-                <h3 style={{fontSize: '1.25rem', marginBottom: '0.5rem'}}>See SnipMemory in Action</h3>
-                <p style={{color: 'var(--text-secondary)', fontSize: '0.9375rem', maxWidth: '400px', margin: '0 auto 1.5rem auto'}}>
-                  Watch how easily barbers can retrieve previous haircuts on a tablet or phone mid-shift.
-                </p>
-                <button className="btn btn-outline btn-sm" onClick={() => router.push('/login')}>Access Barber Workspace</button>
-              </div>
+      <section className="hero" style={{ padding: '5rem 0 3rem 0', position: 'relative', zIndex: 1 }}>
+        <div className="container grid-2" style={{ alignItems: 'center', maxWidth: '1200px' }}>
+          
+          {/* Hero Left Content */}
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'var(--accent-soft)', border: '1px solid rgba(99, 102, 241, 0.2)', padding: '0.35rem 0.85rem', borderRadius: '50px', marginBottom: '1.5rem', fontSize: '0.8125rem', color: 'var(--accent-text)', fontWeight: '600' }}>
+              ✂️ The Salon Stylist & Owner Workspace
+            </div>
+            <h1 style={{ fontSize: '3rem', lineHeight: '1.15', marginBottom: '1.5rem', fontWeight: '800', background: 'linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.03em' }}>
+              Never forget a haircut. Recreate styles perfectly.
+            </h1>
+            <p style={{ fontSize: '1.125rem', color: 'var(--text-secondary)', marginBottom: '2.5rem', lineHeight: '1.6' }}>
+              The high-performance B2B reference database for modern barbershops. Archive client styling preferences, visual 4-angle captures, and coordinate smart retention reminders in seconds.
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <button className="btn btn-primary btn-lg" onClick={() => router.push('/signup')}>Start 14-Day Free Trial</button>
+              <button className="btn btn-secondary btn-lg" onClick={() => router.push('/discovery')}>Search Local Salons</button>
             </div>
           </div>
+
+          {/* Hero Right: Live Interactive Mobile App Simulator */}
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div 
+              style={{ 
+                width: '320px', 
+                height: '560px', 
+                background: '#090a0f', 
+                border: '10px solid #1f2937', 
+                borderRadius: '36px', 
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(99, 102, 241, 0.15)',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                position: 'relative'
+              }}
+            >
+              {/* Phone Speaker & Camera Notch */}
+              <div style={{ position: 'absolute', top: '0', left: '50%', transform: 'translateX(-50%)', width: '100px', height: '18px', background: '#1f2937', borderRadius: '0 0 12px 12px', zIndex: 20 }} />
+
+              {/* Simulated App Header */}
+              <div style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', padding: '1.25rem 1rem 0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--accent-text)' }}>💈 SNIP STATION</span>
+                <span style={{ fontSize: '0.625rem', background: 'var(--success-soft)', color: 'var(--success-color)', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: '700' }}>Active Station</span>
+              </div>
+
+              {/* Simulated App Content Body */}
+              <div style={{ flex: 1, padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', overflowY: 'auto' }}>
+                
+                {simStep === 1 && (
+                  <div className="animate-fade" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', justifyContent: 'center', flex: 1, textAlign: 'center' }}>
+                    <div style={{ fontSize: '2rem' }}>🔍</div>
+                    <div>
+                      <strong style={{ fontSize: '0.875rem', display: 'block', marginBottom: '0.25rem' }}>Client Database Search</strong>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Type number to fetch cut specs</span>
+                    </div>
+
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <input 
+                        type="text" 
+                        className="form-control" 
+                        readOnly 
+                        value={simPhone}
+                        style={{ textAlign: 'center', background: 'var(--bg-tertiary)', border: '1px solid var(--border-focus)', fontSize: '0.9375rem', fontWeight: '600' }}
+                      />
+                    </div>
+
+                    <button 
+                      type="button"
+                      className="btn btn-primary btn-block btn-sm"
+                      onClick={() => setSimStep(2)}
+                      style={{ marginTop: '0.5rem' }}
+                    >
+                      Search Roster
+                    </button>
+                  </div>
+                )}
+
+                {simStep === 2 && (
+                  <div className="animate-fade" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {/* Client Header */}
+                    <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.75rem', textAlign: 'left' }}>
+                      <div className="flex-between">
+                        <strong style={{ fontSize: '0.875rem' }}>Alexander Wright</strong>
+                        <span style={{ fontSize: '0.625rem', color: 'var(--text-muted)' }}>ID: #9901</span>
+                      </div>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>(206) 555-0100</span>
+                      
+                      {/* Specs Tags */}
+                      <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                        <span style={{ fontSize: '0.625rem', padding: '0.15rem 0.35rem', background: 'var(--accent-soft)', color: 'var(--accent-text)', borderRadius: '4px' }}>#LowFade</span>
+                        <span style={{ fontSize: '0.625rem', padding: '0.15rem 0.35rem', background: 'var(--accent-soft)', color: 'var(--accent-text)', borderRadius: '4px' }}>#Quiff</span>
+                        <span style={{ fontSize: '0.625rem', padding: '0.15rem 0.35rem', background: 'var(--accent-soft)', color: 'var(--accent-text)', borderRadius: '4px' }}>#Lineup</span>
+                      </div>
+                    </div>
+
+                    {/* Cut visual list */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
+                      <div style={{ position: 'relative', aspectRatio: '1/1', background: 'var(--bg-tertiary)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: simFaceBlurred ? 'repeating-conic-gradient(#555 0% 25%, #666 0% 50%) 50% / 12px 12px' : 'none' }}>
+                          {!simFaceBlurred && <span style={{ fontSize: '1.25rem' }}>👨</span>}
+                        </div>
+                        <span style={{ position: 'absolute', bottom: '0.25rem', left: '0.25rem', fontSize: '0.625rem', background: 'rgba(0,0,0,0.6)', padding: '0.1rem 0.3rem', borderRadius: '2px' }}>Front</span>
+                      </div>
+                      <div style={{ position: 'relative', aspectRatio: '1/1', background: 'var(--bg-tertiary)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontSize: '1.25rem' }}>💇‍♂️</span>
+                        <span style={{ position: 'absolute', bottom: '0.25rem', left: '0.25rem', fontSize: '0.625rem', background: 'rgba(0,0,0,0.6)', padding: '0.1rem 0.3rem', borderRadius: '2px' }}>Left Profile</span>
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'left' }}>
+                      <strong>Stylist Note:</strong> Low fade with number 2 guard on sides. Leave textured quiff on top.
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                      <button className="btn btn-secondary btn-block btn-sm" onClick={() => setSimStep(1)}>
+                        Back
+                      </button>
+                      <button className="btn btn-primary btn-block btn-sm" onClick={() => setSimStep(3)}>
+                        Verify Camera
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {simStep === 3 && (
+                  <div className="animate-fade" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', flex: 1, justifyContent: 'center' }}>
+                    <strong style={{ fontSize: '0.875rem' }}>Stylist Camera Pipeline</strong>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0 }}>
+                      Try the dynamic pixelation face mask used for privacy settings.
+                    </p>
+
+                    <div 
+                      style={{ 
+                        aspectRatio: '1.3/1', 
+                        background: '#000', 
+                        borderRadius: '6px', 
+                        border: '1px solid var(--border-focus)', 
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      {/* SVG Outline Overlay */}
+                      <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', stroke: 'rgba(99, 102, 241, 0.4)', fill: 'none', strokeWidth: '0.5', pointerEvents: 'none' }}>
+                        <ellipse cx="50" cy="45" rx="20" ry="26" />
+                        <line x1="50" y1="10" x2="50" y2="80" strokeDasharray="2" />
+                      </svg>
+
+                      {/* Mock Client portrait */}
+                      <div 
+                        style={{ 
+                          width: '40px', 
+                          height: '40px', 
+                          borderRadius: '50%', 
+                          background: simFaceBlurred ? 'repeating-conic-gradient(#333 0% 25%, #888 0% 50%) 50% / 6px 6px' : 'var(--accent-color)', 
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {!simFaceBlurred && <span style={{ fontSize: '1rem' }}>😊</span>}
+                      </div>
+                    </div>
+
+                    <div className="flex-between" style={{ background: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                      <span style={{ fontSize: '0.75rem' }}>Face Blur Active</span>
+                      <input 
+                        type="checkbox" 
+                        checked={simFaceBlurred}
+                        onChange={(e) => setSimFaceBlurred(e.target.checked)}
+                        style={{ cursor: 'pointer' }}
+                      />
+                    </div>
+
+                    <button 
+                      className="btn btn-primary btn-block btn-sm"
+                      onClick={() => {
+                        setSimSuccessMsg('Photo saved to R2 vault!');
+                        setTimeout(() => setSimSuccessMsg(''), 2000);
+                        setSimStep(2);
+                      }}
+                    >
+                      Capture Snapshot
+                    </button>
+                    <button className="btn btn-secondary btn-block btn-sm" onClick={() => setSimStep(2)}>
+                      Back
+                    </button>
+                  </div>
+                )}
+
+              </div>
+
+              {/* Sim Success Toast */}
+              {simSuccessMsg && (
+                <div style={{ position: 'absolute', bottom: '1rem', left: '1rem', right: '1rem', background: 'var(--success-color)', color: '#fff', fontSize: '0.75rem', fontWeight: '700', padding: '0.5rem', borderRadius: '4px', textAlign: 'center', zIndex: 30 }} className="animate-slide">
+                  ✅ {simSuccessMsg}
+                </div>
+              )}
+            </div>
+          </div>
+
         </div>
       </section>
 
@@ -167,7 +376,7 @@ export default function LandingPage() {
                 <div key={plan.id} className={`card ${plan.id === 'growth' ? 'card-premium' : ''}`} style={{display: 'flex', flexDirection: 'column', justifyContent: 'between'}}>
                   <div>
                     {plan.id === 'growth' && (
-                      <div style={{position: 'absolute', top: '1rem', right: '1rem', background: 'var(--accent-color)', color: 'var(--bg-primary)', padding: '0.25rem 0.75rem', borderRadius: '50px', fontSize: '0.75rem', fontWeight: '700'}}>
+                      <div style={{position: 'absolute', top: '1rem', right: '1rem', background: 'var(--accent-color)', color: '#fff', padding: '0.25rem 0.75rem', borderRadius: '50px', fontSize: '0.75rem', fontWeight: '700'}}>
                         POPULAR
                       </div>
                     )}

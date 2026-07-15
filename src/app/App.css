@@ -824,4 +824,18 @@
   .mobile-header-actions {
     display: block !important;
   }
+
+  /* Marketing Mobile Header */
+  .marketing-header .container {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .nav-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem 1rem;
+    width: 100%;
+  }
 }
