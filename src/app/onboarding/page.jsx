@@ -17,7 +17,7 @@ export default function Onboarding() {
   // Redirect if not logged in
   useEffect(() => {
     if (!currentSalon) {
-      router.push('/login');
+      router.push('/signup');
     }
   }, [currentSalon, router]);
 

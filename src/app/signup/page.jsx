@@ -184,8 +184,8 @@ function SignupForm() {
 
         <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
           Already have an account?{' '}
-          <button className="btn-text" style={{ padding: 0, font: 'inherit', color: 'var(--accent-color)', cursor: 'pointer' }} onClick={() => router.push('/login')}>
-            Log In
+          <button className="btn-text" style={{ padding: 0, font: 'inherit', color: 'var(--accent-color)', cursor: 'pointer' }} onClick={() => router.push('/discovery')}>
+            Find Workspace
           </button>
         </div>
       </div>
