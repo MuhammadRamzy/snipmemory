@@ -35,6 +35,14 @@ export default function OwnerDashboard({ tab }) {
   const [reminderCadence, setReminderCadence] = useState(30);
   const [settingsSuccess, setSettingsSuccess] = useState(false);
 
+  // Credit card states
+  const [cardHolder, setCardHolder] = useState(currentSalon?.ownerName || '');
+  const [cardNumber, setCardNumber] = useState('•••• •••• •••• 4242');
+  const [cardExpiry, setCardExpiry] = useState('12/28');
+  const [cardCvv, setCardCvv] = useState('***');
+  const [updatingCard, setUpdatingCard] = useState(false);
+  const [cardSuccess, setCardSuccess] = useState(false);
+
   // Sync state values when currentSalon is populated or switched
   useEffect(() => {
     if (currentSalon) {
@@ -62,6 +70,21 @@ export default function OwnerDashboard({ tab }) {
     setTimeout(() => {
       setSettingsSuccess(false);
     }, 4000);
+  };
+
+  const handleUpdateCard = (e) => {
+    e.preventDefault();
+    setUpdatingCard(true);
+    setCardSuccess(false);
+    setTimeout(() => {
+      setUpdatingCard(false);
+      setCardSuccess(true);
+      setTimeout(() => setCardSuccess(false), 4000);
+    }, 1200);
+  };
+
+  const handleDownloadInvoice = (invoiceId) => {
+    alert(`Success: Invoice ${invoiceId} has been successfully generated as PDF and saved to your local downloads directory.`);
   };
 
   if (!currentSalon) return null;
@@ -281,7 +304,7 @@ export default function OwnerDashboard({ tab }) {
 
           <div className="table-container">
             {sortedClients.length > 0 ? (
-              <table className="data-table">
+              <table className="data-table responsive-table">
                 <thead>
                   <tr>
                     <th style={{ cursor: 'pointer' }} onClick={() => toggleSort('name')}>
@@ -300,17 +323,17 @@ export default function OwnerDashboard({ tab }) {
                 <tbody>
                   {sortedClients.map(client => (
                     <tr key={client.id}>
-                      <td style={{ fontWeight: '600' }}>{client.name}</td>
-                      <td style={{ color: 'var(--text-secondary)' }}>{client.mobileNumber}</td>
-                      <td>
+                      <td style={{ fontWeight: '600' }} data-label="Client Name">{client.name}</td>
+                      <td style={{ color: 'var(--text-secondary)' }} data-label="Mobile Phone">{client.mobileNumber}</td>
+                      <td data-label="Visits Recorded">
                         <span style={{ background: 'var(--bg-tertiary)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.8125rem' }}>
                           {client.visitCount} visits
                         </span>
                       </td>
-                      <td style={{ color: 'var(--text-secondary)' }}>
+                      <td style={{ color: 'var(--text-secondary)' }} data-label="Last Visited">
                         {client.lastVisit ? client.lastVisit.toLocaleDateString() : 'Never'}
                       </td>
-                      <td style={{ textAlign: 'right' }}>
+                      <td style={{ textAlign: 'right' }} data-label="Actions">
                         <button 
                           className="btn btn-secondary btn-sm"
                           onClick={() => {
@@ -356,7 +379,7 @@ export default function OwnerDashboard({ tab }) {
 
           <div className="table-container">
             {dueCustomers.length > 0 ? (
-              <table className="data-table">
+              <table className="data-table responsive-table">
                 <thead>
                   <tr>
                     <th>Customer</th>
@@ -375,15 +398,15 @@ export default function OwnerDashboard({ tab }) {
                     
                     return (
                       <tr key={c.id}>
-                        <td style={{ fontWeight: '600' }}>{c.name}</td>
-                        <td style={{ color: 'var(--text-secondary)' }}>{c.mobileNumber}</td>
-                        <td>{lastVisitDate.toLocaleDateString()}</td>
-                        <td>
+                        <td style={{ fontWeight: '600' }} data-label="Customer">{c.name}</td>
+                        <td style={{ color: 'var(--text-secondary)' }} data-label="Mobile Phone">{c.mobileNumber}</td>
+                        <td data-label="Last Cut Date">{lastVisitDate.toLocaleDateString()}</td>
+                        <td data-label="Overdue Period">
                           <span style={{ color: 'var(--warning-color)', fontWeight: '600' }}>
                             {diffDays - currentSalon.reminderCadenceDaysDefault} days late
                           </span>
                         </td>
-                        <td style={{ textAlign: 'right' }}>
+                        <td style={{ textAlign: 'right' }} data-label="Actions">
                           <button 
                             className="btn btn-primary btn-sm"
                             onClick={() => handleOpenReminder(c)}
@@ -558,34 +581,45 @@ export default function OwnerDashboard({ tab }) {
             </div>
           </div>
 
-          {/* Subscription Settings */}
+        </div>
+      )}
+
+      {/* --- BILLING VIEW --- */}
+      {tab === 'billing' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {/* Subscription Status Card */}
           <div className="card card-premium">
             <div className="flex-between" style={{ flexWrap: 'wrap', gap: '1.5rem' }}>
               <div>
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Subscription & Billing</h3>
+                <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Subscription Plan & Limits</h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                  Manage your subscription tier, billing, and system limits.
+                  Your subscription renewal of <strong>${currentSalon.billingInterval === 'annual' ? Math.round(plans.find(p => p.id === currentSalon.planId)?.priceAnnual / 12) : plans.find(p => p.id === currentSalon.planId)?.priceMonthly}/mo</strong> is scheduled for August 15, 2026.
                 </p>
-                <div style={{ marginTop: '1.25rem', display: 'flex', gap: '2rem' }}>
+                <div style={{ marginTop: '1.25rem', display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
                   <div>
-                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Current Plan</span>
+                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Plan Name</span>
                     <strong style={{ fontSize: '1.125rem', color: 'var(--accent-color)' }}>
-                      {plans.find(p => p.id === currentSalon.planId)?.name}
+                      {plans.find(p => p.id === currentSalon.planId)?.name} Tier
                     </strong>
                   </div>
                   <div>
-                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Monthly Cost</span>
-                    <strong>
-                      ${currentSalon.billingInterval === 'annual' 
-                        ? Math.round(plans.find(p => p.id === currentSalon.planId)?.priceAnnual / 12) 
-                        : plans.find(p => p.id === currentSalon.planId)?.priceMonthly}/mo
-                    </strong>
+                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Status</span>
+                    <span className="badge badge-active" style={{ fontSize: '0.75rem', display: 'inline-block', marginTop: '0.25rem' }}>{currentSalon.subscriptionStatus}</span>
                   </div>
-                  <div>
-                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Capacity Usage</span>
-                    <strong>
-                      {salonCustomers.length} / {plans.find(p => p.id === currentSalon.planId)?.customerLimit === -1 ? 'Unlimited' : plans.find(p => p.id === currentSalon.planId)?.customerLimit} Clients
-                    </strong>
+                  <div style={{ minWidth: '150px' }}>
+                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Capacity (Client limit)</span>
+                    <div style={{ background: '#27272a', borderRadius: '4px', height: '8px', width: '100%', overflow: 'hidden' }}>
+                      <div 
+                        style={{ 
+                          background: 'var(--accent-color)', 
+                          height: '100%', 
+                          width: `${Math.min(100, (salonCustomers.length / (plans.find(p => p.id === currentSalon.planId)?.customerLimit === -1 ? 1000 : plans.find(p => p.id === currentSalon.planId)?.customerLimit)) * 100)}%` 
+                        }} 
+                      />
+                    </div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem', display: 'block' }}>
+                      {salonCustomers.length} / {plans.find(p => p.id === currentSalon.planId)?.customerLimit === -1 ? '∞' : plans.find(p => p.id === currentSalon.planId)?.customerLimit} Clients
+                    </span>
                   </div>
                 </div>
               </div>
@@ -593,38 +627,175 @@ export default function OwnerDashboard({ tab }) {
                 Upgrade / Change Plan
               </button>
             </div>
-            
-            {/* Invoice list */}
-            <div style={{ marginTop: '2rem' }}>
-              <h4 style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Invoice History</h4>
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Invoice ID</th>
-                      <th>Date</th>
-                      <th>Plan Tier</th>
-                      <th>Amount</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {salonPayments.map(p => (
-                      <tr key={p.id}>
-                        <td style={{ color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{p.id}</td>
-                        <td>{new Date(p.date).toLocaleDateString()}</td>
-                        <td>{plans.find(pl => pl.id === p.planId)?.name}</td>
-                        <td>${p.amount}</td>
-                        <td>
-                          <span className={`badge ${p.status === 'Success' ? 'badge-active' : 'badge-cancelled'}`}>
-                            {p.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          </div>
+
+          {/* Credit Card Updater Form */}
+          <div className="card">
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Payment Method</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+              Manage credit card credentials on file for automated invoices.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '2rem', flexWrap: 'wrap' }} className="grid-responsive">
+              {/* Card visual mock */}
+              <div 
+                style={{ 
+                  background: 'linear-gradient(135deg, #1f1f2e 0%, #0d0d11 100%)', 
+                  border: '1px solid var(--border-color)', 
+                  borderRadius: '12px', 
+                  padding: '1.5rem', 
+                  position: 'relative', 
+                  minHeight: '180px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  boxShadow: 'var(--shadow-lg)'
+                }}
+              >
+                <div className="flex-between">
+                  <div style={{ fontWeight: '800', fontStyle: 'italic', letterSpacing: '2px', fontSize: '1.125rem' }}>SNIP PAY</div>
+                  <div style={{ background: '#eb001b', width: '28px', height: '28px', borderRadius: '50%', opacity: 0.8, position: 'relative' }}>
+                    <div style={{ background: '#f79e1b', width: '28px', height: '28px', borderRadius: '50%', position: 'absolute', left: '16px', top: 0, opacity: 0.8 }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '1.25rem', letterSpacing: '3px', fontFamily: 'monospace', margin: '1rem 0' }}>
+                    {cardNumber}
+                  </div>
+                  <div className="flex-between" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    <div>
+                      <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase' }}>Cardholder</span>
+                      <strong style={{ color: 'var(--text-primary)' }}>{cardHolder || 'Owner Name'}</strong>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase' }}>Expires</span>
+                      <strong style={{ color: 'var(--text-primary)' }}>{cardExpiry}</strong>
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              {/* Form */}
+              <form onSubmit={handleUpdateCard} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {cardSuccess && (
+                  <div style={{ background: 'var(--success-soft)', border: '1px solid var(--success-color)', color: 'var(--success-color)', padding: '0.75rem', borderRadius: '6px', fontSize: '0.875rem' }}>
+                    ✓ Credit card details updated successfully!
+                  </div>
+                )}
+                
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.8125rem' }}>Cardholder Name</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    required 
+                    value={cardHolder} 
+                    onChange={(e) => setCardHolder(e.target.value)} 
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.8125rem' }}>Card Number</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    required 
+                    maxLength={19}
+                    placeholder="4111 2222 3333 4444"
+                    value={cardNumber} 
+                    onChange={(e) => {
+                      let val = e.target.value.replace(/\D/g, '');
+                      let formatted = val.match(/.{1,4}/g)?.join(' ') || val;
+                      setCardNumber(formatted.substring(0, 19));
+                    }} 
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.8125rem' }}>Expiration (MM/YY)</label>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      required 
+                      maxLength={5}
+                      placeholder="12/28"
+                      value={cardExpiry} 
+                      onChange={(e) => {
+                        let val = e.target.value.replace(/\D/g, '');
+                        if (val.length > 2) {
+                          val = val.substring(0,2) + '/' + val.substring(2,4);
+                        }
+                        setCardExpiry(val);
+                      }} 
+                    />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.8125rem' }}>CVV</label>
+                    <input 
+                      type="password" 
+                      className="form-control" 
+                      required 
+                      maxLength={4}
+                      placeholder="***"
+                      value={cardCvv} 
+                      onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, ''))} 
+                    />
+                  </div>
+                </div>
+
+                <button type="submit" className="btn btn-secondary btn-block" disabled={updatingCard} style={{ marginTop: '0.5rem' }}>
+                  {updatingCard ? 'Securing Credentials...' : 'Save Payment Method'}
+                </button>
+              </form>
+            </div>
+          </div>
+
+          {/* Invoices List */}
+          <div className="card">
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Invoice History</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+              Download official receipts and PDF transactions statements.
+            </p>
+
+            <div className="table-container">
+              <table className="data-table responsive-table">
+                <thead>
+                  <tr>
+                    <th>Invoice ID</th>
+                    <th>Date</th>
+                    <th>Plan Tier</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {salonPayments.map(p => (
+                    <tr key={p.id}>
+                      <td style={{ color: 'var(--text-secondary)', fontFamily: 'monospace' }} data-label="Invoice ID">{p.id}</td>
+                      <td data-label="Date">{new Date(p.date).toLocaleDateString()}</td>
+                      <td data-label="Plan Tier">{plans.find(pl => pl.id === p.planId)?.name}</td>
+                      <td data-label="Amount">${p.amount}</td>
+                      <td data-label="Status">
+                        <span className={`badge ${p.status === 'Success' ? 'badge-active' : 'badge-cancelled'}`}>
+                          {p.status}
+                        </span>
+                      </td>
+                      <td data-label="Action">
+                        <button 
+                          className="btn btn-outline btn-sm" 
+                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                          onClick={() => handleDownloadInvoice(p.id)}
+                        >
+                          ⬇ PDF Receipt
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

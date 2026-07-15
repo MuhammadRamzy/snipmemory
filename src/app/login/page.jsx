@@ -113,33 +113,6 @@ export default function Login() {
             <button type="submit" className="btn btn-primary btn-block btn-lg" style={{ marginTop: '1.5rem' }}>
               Log In to Station
             </button>
-
-            {/* Quick Demo Logins Helper */}
-            <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--bg-tertiary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <span style={{ display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '0.75rem', fontWeight: '600' }}>
-                Demo Shortcuts (Prototype Seed)
-              </span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary btn-sm" 
-                  style={{ justifyContent: 'space-between', width: '100%', fontSize: '0.8125rem' }}
-                  onClick={() => handleDemoAccess('owner@classiccuts.com')}
-                >
-                  <span>Classic Cuts (Active Pro)</span>
-                  <span style={{ color: 'var(--success-color)' }}>Active &rarr;</span>
-                </button>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary btn-sm" 
-                  style={{ justifyContent: 'space-between', width: '100%', fontSize: '0.8125rem' }}
-                  onClick={() => handleDemoAccess('owner@goldenscissors.com')}
-                >
-                  <span>Golden Scissors (PastDue)</span>
-                  <span style={{ color: 'var(--warning-color)' }}>PastDue &rarr;</span>
-                </button>
-              </div>
-            </div>
           </form>
         ) : (
           /* Forgot Password Mock Form */

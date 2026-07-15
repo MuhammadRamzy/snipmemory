@@ -1,45 +1,48 @@
 # SnipMemory ✂️
 
-SnipMemory is a professional, premium SaaS platform built for modern hair salons and barber shops to manage customer style indexes, 4-angle visual haircut history, and automated client retention reminders.
+SnipMemory is a professional, premium B2B SaaS platform built for modern hair salons and barber shops to manage customer style indexes, 4-angle visual haircut history, and automated client retention reminders.
 
-This codebase has been fully migrated from a legacy Vite + React Router single page app to a high-performance **Next.js App Router** framework using **React 19**, **Tailwind CSS v4**, and robust client-safe state synchronization.
+This codebase is built on **Next.js App Router** with **React 19**, **Tailwind CSS v4**, and robust client-safe state synchronization.
 
 ---
 
 ## 🚀 Key Features
 
 ### 1. Marketing & Booking Surface
-*   **Landing Page**: Interactive premium pricing plans, interval selection toggles (monthly vs. annual), and dynamic client benefit sections.
+*   **Landing Page**: Interactive premium pricing plans, billing interval selection toggles (monthly vs. annual), and dynamic client benefit sections.
 *   **Onboarding Flow**: 3-step progressive onboarding wizard to configure salon profiles, stylist station rosters, and custom reminder timelines.
-*   **Demo Access**: Direct shortcuts to mock accounts for immediate workspace testing.
+*   **Discovery Portal (`/discovery`)**: Public search registry for clients to find registered salons, browse reviews, and view stylist ratings.
 
 ### 2. Salon Workspace App (`/app/*`)
 *   **Barber Mode (`/app/barber`)**:
     *   Dynamic client lookup by name/phone with state preservation.
-    *   4-Angle haircut visual log viewer (Front, Back, Left, Right) with styling notes.
-    *   Mock camera integration for instant photo updates.
-    *   Stylist station attribution selector.
+    *   **Live Camera Capture**: Hardware integration utilizing `getUserMedia` camera streams with precision SVG outline overlays (**Front**, **Left**, **Right**, **Back** profile views) for high-fidelity cut alignment.
+    *   **Privacy Face Blur**: Optional dynamic client-side HTML5 canvas pixelation algorithm to obscure front-view facial identity before saving.
+    *   **Cross-Salon OTP Transfer**: 6-digit SMS verification simulator that queries client credentials from other salons and copies styling history specs directly into the active ticket context.
+    *   Graceful fallback for manual file uploads if camera access is restricted.
 *   **Owner Dashboard (`/app/dashboard`)**:
     *   **Metrics View**: Weekly performance charts, monthly visit metrics, and pending retention stats.
     *   **Clients Database (`/app/clients`)**: High-performance sorting, searching, and direct deep-linking back to Barber Mode styling cards.
     *   **Reminders View (`/app/reminders`)**: Automated list of clients due for follow-ups, with template customizers and simulated WhatsApp dispatch broadcasts.
+    *   **Billing Engine (`/app/billing`)**: Dedicated portal showcasing plan limits usage, glassmorphic mock credit card verification forms, and downloadable invoice simulators.
     *   **Settings (`/app/settings`)**: Station roster adjustments, staff profiles, plan upgrades, and invoice history tables.
 
-### 3. Platform Admin Console (`/admin/*`)
-*   **Operator Login**: Secure session gates with demo shortcuts.
+### 3. Platform Admin Console (`/admin/*` & Subdomains)
+*   **Operator Login**: Secure session gates.
+*   **Host-Restricted Routing**: Integrated Next.js proxy routing restricting admin console access via matches to `admin.localhost` hostnames or `/admin` route paths.
 *   **Platform Dashboard**: Real-time cross-platform metrics (Global salons, active subscriptions, Estimated MRR calculations, global visits).
 *   **Salon Roster Inspector**: Deep inspect client lists, station totals, payment history, and administrative overrides (mark active/cancelled/past-due).
-*   **Global Broadcast settings**: Enable or disable system-wide warning banners displayed at the top of all salon-facing dashboard pages.
+*   **Global Broadcast Settings**: Enable or disable system-wide warning banners displayed at the top of all salon-facing dashboard pages.
 
 ---
 
 ## 🛠️ Architecture & Technology Stack
 
-*   **Framework**: Next.js 16 (App Router)
+*   **Framework**: Next.js (App Router)
 *   **State Management**: React Context (`AppContext.jsx`) with dynamic `localStorage` hydration guards to prevent server-side rendering (SSR) mismatch states.
-*   **Styling**: Tailwind CSS v4 featuring a curated theme palette:
-    *   `Charcoal` dark mode variables (`#0d0d0f`)
-    *   `Amber/Gold` accent tokens (`#d97706` / `#f59e0b`)
+*   **Styling**: Tailwind CSS v4 featuring a curated professional B2B theme palette:
+    *   `Steel Slate` dark mode variables (`#090a0f` / `#111219`)
+    *   `Sapphire Indigo` accent tokens (`#6366f1` / `#4f46e5`)
     *   Smooth micro-animations (`animate-fade`, `animate-slide`)
 *   **Gating Security**: Layout-level PIN protection gate (locks owner-only routes `/app/*` until the 4-digit PIN is entered).
 
@@ -54,15 +57,17 @@ src/
 │   │   ├── login/           # Admin login portal
 │   │   └── page.jsx         # Administrative command center
 │   ├── app/
-│   │   ├── barber/          # Barber styling mode
+│   │   ├── barber/          # Barber styling mode & camera overlays
+│   │   ├── billing/         # Dedicated B2B subscription manager
 │   │   ├── clients/         # Owner clients CRM page
 │   │   ├── dashboard/       # Owner statistics metrics page
 │   │   ├── reminders/       # Retention reminder dispatcher
-│   │   ├── settings/        # Stylists & billing settings page
+│   │   ├── settings/        # Stylists & station roster settings
 │   │   ├── layout.jsx       # Workspace layout with PIN gate security
 │   │   └── page.jsx         # Redirect to barber workspace
 │   ├── checkout/            # Plan checkout simulator
-│   ├── login/               # Owner workspace login
+│   ├── discovery/           # Public salon directory & reviews
+│   ├── login/               # Owner workspace login (shortcut buttons removed)
 │   ├── onboarding/          # Progressive setup flow
 │   ├── signup/              # Account registration
 │   ├── globals.css          # Tailwind CSS v4 variables & theme overrides
@@ -101,7 +106,7 @@ Make sure you have [Node.js](https://nodejs.org) (v18+) and [npm](https://npmjs.
 
 ---
 
-## 🔑 Demo Access Credentials
+## 🔑 Sandbox Credentials
 
 For ease of testing, the system is seeded with the following sandbox accounts:
 
@@ -120,6 +125,6 @@ For ease of testing, the system is seeded with the following sandbox accounts:
 *   **Owner PIN Code** (used to switch from Stylist/Barber mode to the Owner Dashboard): `1234` or `0000`
 
 ### Platform Administration Portal
-*   **Access URL**: `/admin/login`
+*   **Access Route**: `/admin/login` or via subdomain `admin.localhost:3000/login`
 *   **Email**: `admin@snipmemory.com`
 *   **Password**: `admin`

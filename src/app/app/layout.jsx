@@ -12,6 +12,7 @@ export default function SalonLayout({ children }) {
   const [showPinGate, setShowPinGate] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   useEffect(() => {
     // Wait for the context to load from localStorage before redirecting
@@ -77,13 +78,15 @@ export default function SalonLayout({ children }) {
       {/* 3. Header Nav */}
       <header className="salon-header">
         <div className="container flex-between" style={{ padding: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div className="logo-brand" style={{ fontSize: '1.25rem' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--accent-color)' }}>
-                <path d="M4 22V4c0-.5.2-1 .6-1.4C5 2.2 5.5 2 6 2h12c.5 0 1 .2 1.4.6.4.4.6.9.6 1.4v18l-8-4-8 4z" />
-              </svg>
-              Snip<span>Memory</span>
-            </div>
+          <div className="logo-brand" style={{ fontSize: '1.25rem' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--accent-color)' }}>
+              <path d="M4 22V4c0-.5.2-1 .6-1.4C5 2.2 5.5 2 6 2h12c.5 0 1 .2 1.4.6.4.4.6.9.6 1.4v18l-8-4-8 4z" />
+            </svg>
+            Snip<span>Memory</span>
+          </div>
+
+          {/* Desktop Navigation / Info (Hidden on mobile) */}
+          <div className="desktop-header-meta" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>|</span>
               <span style={{ fontSize: '0.875rem', fontWeight: '600' }}>{currentSalon.name}</span>
@@ -94,12 +97,9 @@ export default function SalonLayout({ children }) {
                 {currentSalon.subscriptionStatus}
               </span>
             </div>
-          </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            {/* Owner Navigation Links (Visible only in owner mode) */}
             {salonMode === 'owner' && (
-              <nav style={{ display: 'flex', gap: '0.5rem', marginRight: '1rem' }} className="owner-sub-nav">
+              <nav style={{ display: 'flex', gap: '0.5rem' }} className="owner-sub-nav">
                 <button 
                   className={`btn btn-sm ${pathname === '/app/dashboard' ? 'btn-primary' : 'btn-text'}`}
                   onClick={() => router.push('/app/dashboard')}
@@ -119,6 +119,12 @@ export default function SalonLayout({ children }) {
                   Reminders
                 </button>
                 <button 
+                  className={`btn btn-sm ${pathname === '/app/billing' ? 'btn-primary' : 'btn-text'}`}
+                  onClick={() => router.push('/app/billing')}
+                >
+                  Billing
+                </button>
+                <button 
                   className={`btn btn-sm ${pathname === '/app/settings' ? 'btn-primary' : 'btn-text'}`}
                   onClick={() => router.push('/app/settings')}
                 >
@@ -136,6 +142,49 @@ export default function SalonLayout({ children }) {
             <button className="btn btn-text btn-sm" onClick={() => { logout(); router.push('/'); }} style={{ color: 'var(--error-color)' }}>
               Logout
             </button>
+          </div>
+
+          {/* Mobile Profile Trigger (Visible on mobile only) */}
+          <div className="mobile-header-actions" style={{ display: 'none', position: 'relative' }}>
+            <button 
+              className="btn btn-secondary btn-sm" 
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              style={{ borderRadius: '50%', width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderColor: 'var(--accent-color)' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </button>
+
+            {showProfileMenu && (
+              <div className="mobile-profile-dropdown animate-slide" style={{ position: 'absolute', top: '45px', right: 0, width: '220px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '1rem', zIndex: 1000, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
+                <div style={{ marginBottom: '0.75rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-color)' }}>
+                  <div style={{ fontWeight: '600', fontSize: '0.9375rem', color: 'var(--text-primary)' }}>{currentSalon.name}</div>
+                  <span className={`badge ${
+                    currentSalon.subscriptionStatus === 'Active' ? 'badge-active' : 
+                    currentSalon.subscriptionStatus === 'Trial' ? 'badge-trial' : 'badge-pastdue'
+                  }`} style={{ scale: '0.8', transformOrigin: 'left center', marginTop: '0.25rem' }}>
+                    {currentSalon.subscriptionStatus}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <button 
+                    className="btn btn-secondary btn-sm btn-block" 
+                    onClick={() => { setShowProfileMenu(false); handleModeToggle(); }}
+                    style={{ justifyContent: 'flex-start', fontSize: '0.8125rem' }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    {salonMode === 'barber' ? 'Switch to Owner' : 'Switch to Stylist'}
+                  </button>
+                  <button 
+                    className="btn btn-text btn-sm btn-block" 
+                    onClick={() => { setShowProfileMenu(false); logout(); router.push('/'); }}
+                    style={{ color: 'var(--error-color)', justifyContent: 'flex-start', fontSize: '0.8125rem' }}
+                  >
+                    Logout Station
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -209,6 +258,13 @@ export default function SalonLayout({ children }) {
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
             <span>Reminders</span>
+          </button>
+          <button 
+            className={`mobile-nav-tab ${pathname === '/app/billing' ? 'active' : ''}`}
+            onClick={() => router.push('/app/billing')}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            <span>Billing</span>
           </button>
           <button 
             className={`mobile-nav-tab ${pathname === '/app/settings' ? 'active' : ''}`}

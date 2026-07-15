@@ -68,14 +68,15 @@
 
 .btn-primary {
   background-color: var(--accent-color);
-  color: var(--bg-primary);
+  color: #ffffff;
   font-weight: 600;
+  border: 1px solid var(--accent-hover);
 }
 
 .btn-primary:hover {
   background-color: var(--accent-hover);
-  color: var(--bg-primary);
-  box-shadow: 0 0 15px rgba(217, 119, 6, 0.4);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
 }
 
 .btn-secondary {
@@ -420,7 +421,7 @@
 
 .bar-fill:hover {
   background: var(--accent-hover);
-  box-shadow: 0 0 10px rgba(217, 119, 6, 0.3);
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
 }
 
 .bar-value {
@@ -713,4 +714,114 @@
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+/* --- Responsive Table Cards for Mobile Viewports --- */
+@media (max-width: 768px) {
+  .responsive-table {
+    display: block;
+    width: 100%;
+  }
+  .responsive-table thead {
+    display: none; /* Hide standard headers */
+  }
+  .responsive-table tbody {
+    display: block;
+    width: 100%;
+  }
+  .responsive-table tr {
+    display: block;
+    width: 100%;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    margin-bottom: 1rem;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  }
+  .responsive-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 0.5rem 0 !important;
+    text-align: right !important;
+    width: 100% !important;
+    font-size: 0.875rem;
+  }
+  .responsive-table td:last-child {
+    border-bottom: none !important;
+  }
+  .responsive-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-secondary);
+    float: left;
+    text-align: left;
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  /* Make button actions full width inside cards */
+  .responsive-table td .btn {
+    width: 100%;
+    margin-top: 0.25rem;
+  }
+}
+
+/* --- Admin Mobile Header Nav & Overlay Menu --- */
+.admin-mobile-header {
+  display: none;
+}
+
+.admin-mobile-menu {
+  display: none;
+}
+
+@media (max-width: 992px) {
+  .admin-mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.75rem 1.25rem;
+    position: sticky;
+    top: 0;
+    z-index: 101;
+  }
+
+  .admin-mobile-menu {
+    display: block;
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(10, 10, 15, 0.95);
+    backdrop-filter: blur(8px);
+    padding: 1.5rem;
+    z-index: 100;
+    overflow-y: auto;
+    border-bottom: 1px solid var(--border-color);
+    animation: slideUp 0.25s ease-out;
+  }
+
+  .admin-sidebar {
+    display: none !important;
+  }
+
+  .admin-main {
+    margin-left: 0 !important;
+    padding: 1.25rem !important;
+  }
+
+  .desktop-header-meta {
+    display: none !important;
+  }
+
+  .mobile-header-actions {
+    display: block !important;
+  }
 }

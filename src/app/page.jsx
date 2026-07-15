@@ -52,6 +52,7 @@ export default function LandingPage() {
             <a href="#features" className="nav-link">Features</a>
             <a href="#pricing" className="nav-link">Pricing</a>
             <a href="#faq" className="nav-link">FAQ</a>
+            <button className="btn btn-secondary btn-sm" onClick={() => router.push('/discovery')} style={{ borderColor: 'var(--accent-color)', color: 'var(--accent-color)' }}>Search Salons</button>
             <button className="btn btn-secondary btn-sm" onClick={() => router.push('/login')}>Salon Login</button>
             <button className="btn btn-primary btn-sm" onClick={() => router.push('/signup')}>Start Free Trial</button>
           </nav>
@@ -65,9 +66,9 @@ export default function LandingPage() {
           <p>
             The premium B2B photo database for barbershops and salons. Take reference photos, store style notes, and send automated client retention reminders in seconds.
           </p>
-          <div className="flex-center" style={{gap: '1rem'}}>
+          <div className="flex-center" style={{gap: '1rem', flexWrap: 'wrap'}}>
             <button className="btn btn-primary btn-lg" onClick={() => router.push('/signup')}>Start 14-Day Free Trial</button>
-            <a href="#pricing" className="btn btn-secondary btn-lg">View Pricing Plans</a>
+            <button className="btn btn-secondary btn-lg" onClick={() => router.push('/discovery')}>Browse Salon Directory & Reviews</button>
           </div>
           <div style={{marginTop: '4rem', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: '16px', background: 'rgba(255,255,255,0.01)', boxShadow: 'var(--shadow-premium)'}}>
             <div style={{height: '350px', background: 'var(--bg-secondary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.05)', position: 'relative'}}>
@@ -79,7 +80,7 @@ export default function LandingPage() {
                 <p style={{color: 'var(--text-secondary)', fontSize: '0.9375rem', maxWidth: '400px', margin: '0 auto 1.5rem auto'}}>
                   Watch how easily barbers can retrieve previous haircuts on a tablet or phone mid-shift.
                 </p>
-                <button className="btn btn-outline btn-sm" onClick={() => router.push('/login')}>Try Demo Salon Profile</button>
+                <button className="btn btn-outline btn-sm" onClick={() => router.push('/login')}>Access Barber Workspace</button>
               </div>
             </div>
           </div>

@@ -6,19 +6,19 @@
 @import "./App.css";
 
 @theme {
-  --color-bg-primary: #0c0c0e;
-  --color-bg-secondary: #141418;
-  --color-bg-tertiary: #1b1b22;
+  --color-bg-primary: #090a0f;
+  --color-bg-secondary: #111219;
+  --color-bg-tertiary: #191a24;
   
   --color-text-primary: #f3f4f6;
   --color-text-secondary: #9ca3af;
-  --color-text-muted: #6b7280;
+  --color-text-muted: #4b5563;
   
-  --color-accent-color: #d97706;
-  --color-accent-hover: #b45309;
-  --color-accent-soft: rgba(217, 119, 6, 0.15);
+  --color-accent-color: #6366f1;
+  --color-accent-hover: #4f46e5;
+  --color-accent-soft: rgba(99, 102, 241, 0.1);
   
-  --color-border-color: #24242e;
+  --color-border-color: #1f2937;
   
   --color-success-color: #10b981;
   --color-success-soft: rgba(16, 185, 129, 0.1);
@@ -30,19 +30,19 @@
 
 /* Custom UI/UX Themes Configuration */
 :root, [data-theme="charcoal"] {
-  --bg-primary: #0c0c0e;
-  --bg-secondary: #141418;
-  --bg-tertiary: #1b1b22;
-  --accent-color: #d97706;
-  --accent-hover: #b45309;
-  --accent-soft: rgba(217, 119, 6, 0.15);
+  --bg-primary: #090a0f;
+  --bg-secondary: #111219;
+  --bg-tertiary: #191a24;
+  --accent-color: #6366f1;
+  --accent-hover: #4f46e5;
+  --accent-soft: rgba(99, 102, 241, 0.1);
   
-  --color-bg-primary: #0c0c0e;
-  --color-bg-secondary: #141418;
-  --color-bg-tertiary: #1b1b22;
-  --color-accent-color: #d97706;
-  --color-accent-hover: #b45309;
-  --color-accent-soft: rgba(217, 119, 6, 0.15);
+  --color-bg-primary: #090a0f;
+  --color-bg-secondary: #111219;
+  --color-bg-tertiary: #191a24;
+  --color-accent-color: #6366f1;
+  --color-accent-hover: #4f46e5;
+  --color-accent-soft: rgba(99, 102, 241, 0.1);
 }
 
 [data-theme="barber"] {

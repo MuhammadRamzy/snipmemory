@@ -27,6 +27,7 @@ export default function AdminDashboard() {
   // Navigation state
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'salons' | 'billing' | 'settings'
   const [selectedSalonId, setSelectedSalonId] = useState(null); // Inside salons inspector
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Salons grid filters
   const [salonSearch, setSalonSearch] = useState('');
@@ -165,8 +166,78 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="animate-fade" style={{ display: 'flex', minHeight: '100vh', background: '#0a0a0f' }}>
+    <div className="animate-fade admin-layout-root" style={{ display: 'flex', minHeight: '100vh', background: '#0a0a0f' }}>
       
+      {/* Mobile Top Header (Visible on mobile viewports only) */}
+      <header className="admin-mobile-header">
+        <div className="logo-brand">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--accent-color)' }}>
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Snip<span>Admin</span>
+        </div>
+        <button 
+          className="btn btn-secondary btn-sm"
+          onClick={() => setShowMobileMenu(!showMobileMenu)}
+          style={{ padding: '0.5rem' }}
+        >
+          {showMobileMenu ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          )}
+        </button>
+      </header>
+
+      {/* Mobile Sidebar Dropdown Drawer */}
+      {showMobileMenu && (
+        <div className="admin-mobile-menu animate-slide">
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
+            <button 
+              className={`admin-nav-item btn-block ${activeTab === 'overview' ? 'active' : ''}`}
+              onClick={() => { setActiveTab('overview'); setSelectedSalonId(null); setShowMobileMenu(false); }}
+            >
+              Dashboard Overview
+            </button>
+            <button 
+              className={`admin-nav-item btn-block ${activeTab === 'salons' ? 'active' : ''}`}
+              onClick={() => { setActiveTab('salons'); setShowMobileMenu(false); }}
+            >
+              Manage Salons ({totalSalons})
+            </button>
+            <button 
+              className={`admin-nav-item btn-block ${activeTab === 'billing' ? 'active' : ''}`}
+              onClick={() => { setActiveTab('billing'); setSelectedSalonId(null); setShowMobileMenu(false); }}
+            >
+              Billing & Invoices
+            </button>
+            <button 
+              className={`admin-nav-item btn-block ${activeTab === 'settings' ? 'active' : ''}`}
+              onClick={() => { setActiveTab('settings'); setSelectedSalonId(null); setShowMobileMenu(false); }}
+            >
+              Platform Settings
+            </button>
+          </nav>
+
+          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <button 
+              className="btn btn-secondary btn-block btn-sm"
+              onClick={() => { resetAllData(); setShowMobileMenu(false); }}
+              style={{ borderColor: 'var(--error-color)', color: 'var(--error-color)' }}
+            >
+              Reset Platform DB
+            </button>
+            <button 
+              className="btn btn-text btn-block btn-sm"
+              onClick={() => { logout(); router.push('/admin/login'); }}
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              Logout Operator
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 1. Admin Sidebar Nav */}
       <aside className="admin-sidebar">
         <div className="logo-brand" style={{ marginBottom: '2.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
@@ -361,7 +432,7 @@ export default function AdminDashboard() {
             {/* Salons Table */}
             <div className="table-container">
               {sortedSalons.length > 0 ? (
-                <table className="data-table">
+                <table className="data-table responsive-table">
                   <thead>
                     <tr>
                       <th style={{ cursor: 'pointer' }} onClick={() => toggleSalonSort('name')}>
@@ -380,12 +451,12 @@ export default function AdminDashboard() {
                   <tbody>
                     {sortedSalons.map(s => (
                       <tr key={s.id}>
-                        <td style={{ fontWeight: '600' }}>{s.name}</td>
-                        <td>
+                        <td style={{ fontWeight: '600' }} data-label="Shop Name">{s.name}</td>
+                        <td data-label="Owner">
                           <div>{s.ownerName}</div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{s.email}</div>
                         </td>
-                        <td>
+                        <td data-label="Status">
                           <span className={`badge ${
                             s.subscriptionStatus === 'Active' ? 'badge-active' :
                             s.subscriptionStatus === 'Trial' ? 'badge-trial' :
@@ -394,10 +465,10 @@ export default function AdminDashboard() {
                             {s.subscriptionStatus}
                           </span>
                         </td>
-                        <td style={{ textTransform: 'capitalize' }}>{s.planId}</td>
-                        <td>{s.customerCount} records</td>
-                        <td>{s.staffCount} stations</td>
-                        <td style={{ textAlign: 'right' }}>
+                        <td style={{ textTransform: 'capitalize' }} data-label="Plan Level">{s.planId}</td>
+                        <td data-label="Clients Stored">{s.customerCount} records</td>
+                        <td data-label="Stylists">{s.staffCount} stations</td>
+                        <td style={{ textAlign: 'right' }} data-label="Actions">
                           <button 
                             className="btn btn-secondary btn-sm"
                             onClick={() => setSelectedSalonId(s.id)}
@@ -449,7 +520,7 @@ export default function AdminDashboard() {
                 <div className="card">
                   <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Salon Invoices History</h3>
                   <div className="table-container">
-                    <table className="data-table">
+                    <table className="data-table responsive-table">
                       <thead>
                         <tr>
                           <th>Invoice ID</th>
@@ -462,10 +533,10 @@ export default function AdminDashboard() {
                         {selectedSalonPayments.length > 0 ? (
                           selectedSalonPayments.map(p => (
                             <tr key={p.id}>
-                              <td style={{ fontFamily: 'monospace' }}>{p.id}</td>
-                              <td>{new Date(p.date).toLocaleDateString()}</td>
-                              <td>${p.amount}</td>
-                              <td>
+                              <td style={{ fontFamily: 'monospace' }} data-label="Invoice ID">{p.id}</td>
+                              <td data-label="Date">{new Date(p.date).toLocaleDateString()}</td>
+                              <td data-label="Amount">${p.amount}</td>
+                              <td data-label="Status">
                                 <span className={`badge ${p.status === 'Success' ? 'badge-active' : 'badge-cancelled'}`}>
                                   {p.status}
                                 </span>
@@ -566,37 +637,37 @@ export default function AdminDashboard() {
         {activeTab === 'billing' && (
           <div className="card animate-fade">
             <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>Platform Billing Invoices Ledger</h3>
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Invoice ID</th>
-                    <th>Salon Shop</th>
-                    <th>Date</th>
-                    <th>Subtotal</th>
-                    <th>Payment Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payments.map(p => {
-                    const salonObj = salons.find(s => s.id === p.salonId);
-                    return (
-                      <tr key={p.id}>
-                        <td style={{ fontFamily: 'monospace' }}>{p.id}</td>
-                        <td style={{ fontWeight: '600' }}>{salonObj ? salonObj.name : 'Unknown Salon'}</td>
-                        <td>{new Date(p.date).toLocaleDateString()}</td>
-                        <td>${p.amount}</td>
-                        <td>
-                          <span className={`badge ${p.status === 'Success' ? 'badge-active' : 'badge-cancelled'}`}>
-                            {p.status}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+             <div className="table-container">
+               <table className="data-table responsive-table">
+                 <thead>
+                   <tr>
+                     <th>Invoice ID</th>
+                     <th>Salon Shop</th>
+                     <th>Date</th>
+                     <th>Subtotal</th>
+                     <th>Payment Status</th>
+                   </tr>
+                 </thead>
+                 <tbody>
+                   {payments.map(p => {
+                     const salonObj = salons.find(s => s.id === p.salonId);
+                     return (
+                       <tr key={p.id}>
+                         <td style={{ fontFamily: 'monospace' }} data-label="Invoice ID">{p.id}</td>
+                         <td style={{ fontWeight: '600' }} data-label="Salon Shop">{salonObj ? salonObj.name : 'Unknown Salon'}</td>
+                         <td data-label="Date">{new Date(p.date).toLocaleDateString()}</td>
+                         <td data-label="Subtotal">${p.amount}</td>
+                         <td data-label="Payment Status">
+                           <span className={`badge ${p.status === 'Success' ? 'badge-active' : 'badge-cancelled'}`}>
+                             {p.status}
+                           </span>
+                         </td>
+                       </tr>
+                     );
+                   })}
+                 </tbody>
+               </table>
+             </div>
           </div>
         )}
 
