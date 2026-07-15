@@ -553,11 +553,11 @@ export default function OwnerDashboard({ tab }) {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
               {[
-                { id: 'charcoal', name: 'Charcoal Gold 🖤', color: '#d97706' },
-                { id: 'barber', name: 'Classic Barber 💈', color: '#3b82f6' },
-                { id: 'emerald', name: 'Emerald Luxe 🟢', color: '#10b981' },
-                { id: 'rose', name: 'Rose Bronze 🌸', color: '#ec4899' },
-                { id: 'cyberpunk', name: 'Cyberpunk Fade ⚡', color: '#d946ef' }
+                { id: 'charcoal', name: 'Charcoal Gold', color: '#d97706' },
+                { id: 'barber', name: 'Classic Barber', color: '#3b82f6' },
+                { id: 'emerald', name: 'Emerald Luxe', color: '#10b981' },
+                { id: 'rose', name: 'Rose Bronze', color: '#ec4899' },
+                { id: 'cyberpunk', name: 'Cyberpunk Fade', color: '#d946ef' }
               ].map(t => (
                 <button
                   key={t.id}
@@ -832,7 +832,7 @@ export default function OwnerDashboard({ tab }) {
               </div>
 
               <div style={{ padding: '0.75rem 1rem', background: 'rgba(16, 185, 129, 0.05)', border: '1px dashed var(--success-color)', borderRadius: '8px', color: 'var(--success-color)', fontSize: '0.8125rem', marginBottom: '1.5rem' }}>
-                💡 Click below to simulate sending. This triggers a callback, stores log metadata, and reports success.
+                [Tip] Click below to simulate sending. This triggers a callback, stores log metadata, and reports success.
               </div>
 
               <div style={{ display: 'flex', gap: '0.5rem' }}>

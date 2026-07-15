@@ -127,7 +127,7 @@ export default function Login() {
 
         {error && (
           <div style={{ background: 'var(--error-soft)', color: 'var(--error-color)', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1.25rem', fontSize: '0.8125rem', fontWeight: '600' }}>
-            ⚠️ {error}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{marginRight: '6px', verticalAlign: 'middle', display: 'inline-block'}}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>{error}
           </div>
         )}
 
@@ -140,14 +140,14 @@ export default function Login() {
                 style={{ flex: 1, borderRadius: '6px', fontSize: '0.8125rem', padding: '0.5rem 0' }}
                 onClick={() => { setActiveTab('owner'); setError(''); }}
               >
-                💼 Owner Console
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{marginRight: '4px', verticalAlign: 'middle'}}><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> Owner Console
               </button>
               <button
                 className={`btn btn-sm ${activeTab === 'stylist' ? 'btn-primary' : 'btn-text'}`}
                 style={{ flex: 1, borderRadius: '6px', fontSize: '0.8125rem', padding: '0.5rem 0' }}
                 onClick={() => { setActiveTab('stylist'); setError(''); }}
               >
-                💈 Stylist Station
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{marginRight: '4px', verticalAlign: 'middle'}}><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg> Stylist Station
               </button>
             </div>
 

@@ -214,7 +214,7 @@ export default function DiscoveryPage() {
                   ) : (
                     getSalonStaff(selectedSalon.id).map(st => (
                       <span key={st.id} className="badge" style={{ backgroundColor: 'var(--accent-soft)', color: 'var(--accent-color)', padding: '0.4rem 0.8rem', fontSize: '0.8125rem' }}>
-                        ✂️ {st.name}
+                        Stylist: {st.name}
                       </span>
                     ))
                   )}

@@ -27,7 +27,7 @@ export const AppProvider = ({ children }) => {
   const [visits, setVisits] = useState(INITIAL_VISITS);
   const [payments, setPayments] = useState(INITIAL_PAYMENTS);
   const [reminderLogs, setReminderLogs] = useState(INITIAL_REMINDERS);
-  const [announcement, setAnnouncement] = useState({ active: true, text: '💡 Maintenance warning: System upgrade scheduled for Sunday at 02:00 AM UTC.' });
+  const [announcement, setAnnouncement] = useState({ active: true, text: '[Notice] Maintenance warning: System upgrade scheduled for Sunday at 02:00 AM UTC.' });
   const [currentSalon, setCurrentSalon] = useState(null);
   const [currentAdmin, setCurrentAdmin] = useState(null);
   const [salonMode, setSalonMode] = useState('barber');
@@ -406,7 +406,7 @@ export const AppProvider = ({ children }) => {
     setCurrentAdmin(null);
     setTempSignup(null);
     setSalonMode('barber');
-    setAnnouncement({ active: true, text: '💡 Maintenance warning: System upgrade scheduled for Sunday at 02:00 AM UTC.' });
+    setAnnouncement({ active: true, text: '[Notice] Maintenance warning: System upgrade scheduled for Sunday at 02:00 AM UTC.' });
   };
 
   return (

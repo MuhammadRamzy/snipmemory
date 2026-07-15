@@ -290,20 +290,50 @@ function BarberModeContent() {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
 
-        const faceW = canvas.width * 0.38;
-        const faceH = canvas.height * 0.48;
-        const faceX = (canvas.width - faceW) / 2;
-        const faceY = (canvas.height - faceH) / 2.2;
+        // Define a face oval that resides lower down (below the hairline) and is centered
+        const faceX = canvas.width * 0.5;
+        const faceY = canvas.height * 0.53; // Shifted down to preserve hair on top
+        const radiusX = canvas.width * 0.15; // Focus on face center width-wise
+        const radiusY = canvas.height * 0.18; // Focus on eyes, nose, mouth only
 
+        // 1. Create a tiny offscreen canvas for pixelation
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = 16;
-        tempCanvas.height = 20;
+        tempCanvas.height = 16;
         const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.drawImage(canvas, faceX, faceY, faceW, faceH, 0, 0, tempCanvas.width, tempCanvas.height);
 
+        // Draw only the face bounding box onto the tiny canvas
+        tempCtx.drawImage(
+          canvas, 
+          faceX - radiusX, 
+          faceY - radiusY, 
+          radiusX * 2, 
+          radiusY * 2, 
+          0, 
+          0, 
+          tempCanvas.width, 
+          tempCanvas.height
+        );
+
+        // 2. Draw the pixelated face back onto the main canvas inside an elliptical mask
+        ctx.save();
+        ctx.beginPath();
+        ctx.ellipse(faceX, faceY, radiusX, radiusY, 0, 0, Math.PI * 2);
+        ctx.clip();
+        
         ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(tempCanvas, 0, 0, tempCanvas.width, tempCanvas.height, faceX, faceY, faceW, faceH);
-        ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(
+          tempCanvas, 
+          0, 
+          0, 
+          tempCanvas.width, 
+          tempCanvas.height, 
+          faceX - radiusX, 
+          faceY - radiusY, 
+          radiusX * 2, 
+          radiusY * 2
+        );
+        ctx.restore();
 
         resolve(canvas.toDataURL('image/jpeg'));
       };
@@ -750,7 +780,7 @@ function BarberModeContent() {
                 </div>
                 
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.4', display: 'block' }}>
-                  💡 Clicking any card activates the camera feed with viewpoint guidelines to ensure exact haircut replications.
+                  [Tip] Clicking any card activates the camera feed with viewpoint guidelines to ensure exact haircut replications.
                 </span>
               </div>
 
@@ -1018,7 +1048,7 @@ function BarberModeContent() {
 
             {customerError && (
               <div style={{ background: 'var(--error-soft)', color: 'var(--error-color)', padding: '0.5rem', borderRadius: '6px', fontSize: '0.75rem', marginBottom: '1rem' }}>
-                ⚠️ {customerError}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{marginRight: '4px', verticalAlign: 'middle'}}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>{customerError}
               </div>
             )}
 

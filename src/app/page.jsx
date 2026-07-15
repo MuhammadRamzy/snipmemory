@@ -95,7 +95,7 @@ export default function LandingPage() {
           {/* Hero Left Content */}
           <div style={{ textAlign: 'left' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'var(--accent-soft)', border: '1px solid rgba(99, 102, 241, 0.2)', padding: '0.35rem 0.85rem', borderRadius: '50px', marginBottom: '1.5rem', fontSize: '0.8125rem', color: 'var(--accent-text)', fontWeight: '600' }}>
-              ✂️ The Salon Stylist & Owner Workspace
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: '4px', verticalAlign: 'middle', color: 'var(--accent-color)' }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> The Salon Stylist & Owner Workspace
             </div>
             <h1 style={{ fontSize: '3rem', lineHeight: '1.15', marginBottom: '1.5rem', fontWeight: '800', background: 'linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.03em' }}>
               Never forget a haircut. Recreate styles perfectly.
@@ -130,7 +130,7 @@ export default function LandingPage() {
 
               {/* Simulated App Header */}
               <div style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', padding: '1.25rem 1rem 0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--accent-text)' }}>💈 SNIP STATION</span>
+                 SNIP STATION
                 <span style={{ fontSize: '0.625rem', background: 'var(--success-soft)', color: 'var(--success-color)', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: '700' }}>Active Station</span>
               </div>
 
@@ -139,7 +139,9 @@ export default function LandingPage() {
                 
                 {simStep === 1 && (
                   <div className="animate-fade" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', justifyContent: 'center', flex: 1, textAlign: 'center' }}>
-                    <div style={{ fontSize: '2rem' }}>🔍</div>
+                    <div style={{ display: 'inline-flex', padding: '0.75rem', borderRadius: '50%', background: 'var(--accent-soft)', color: 'var(--accent-color)', marginBottom: '0.5rem' }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </div>
                     <div>
                       <strong style={{ fontSize: '0.875rem', display: 'block', marginBottom: '0.25rem' }}>Client Database Search</strong>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Type number to fetch cut specs</span>
@@ -188,12 +190,12 @@ export default function LandingPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
                       <div style={{ position: 'relative', aspectRatio: '1/1', background: 'var(--bg-tertiary)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
                         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: simFaceBlurred ? 'repeating-conic-gradient(#555 0% 25%, #666 0% 50%) 50% / 12px 12px' : 'none' }}>
-                          {!simFaceBlurred && <span style={{ fontSize: '1.25rem' }}>👨</span>}
+                          {!simFaceBlurred && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{color: 'var(--accent-color)'}}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
                         </div>
                         <span style={{ position: 'absolute', bottom: '0.25rem', left: '0.25rem', fontSize: '0.625rem', background: 'rgba(0,0,0,0.6)', padding: '0.1rem 0.3rem', borderRadius: '2px' }}>Front</span>
                       </div>
                       <div style={{ position: 'relative', aspectRatio: '1/1', background: 'var(--bg-tertiary)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: '1.25rem' }}>💇‍♂️</span>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{color: 'var(--accent-color)'}}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                         <span style={{ position: 'absolute', bottom: '0.25rem', left: '0.25rem', fontSize: '0.625rem', background: 'rgba(0,0,0,0.6)', padding: '0.1rem 0.3rem', borderRadius: '2px' }}>Left Profile</span>
                       </div>
                     </div>
@@ -252,7 +254,7 @@ export default function LandingPage() {
                           transition: 'all 0.2s'
                         }}
                       >
-                        {!simFaceBlurred && <span style={{ fontSize: '1rem' }}>😊</span>}
+                        {!simFaceBlurred && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{color: '#fff'}}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
                       </div>
                     </div>
 
@@ -287,7 +289,7 @@ export default function LandingPage() {
               {/* Sim Success Toast */}
               {simSuccessMsg && (
                 <div style={{ position: 'absolute', bottom: '1rem', left: '1rem', right: '1rem', background: 'var(--success-color)', color: '#fff', fontSize: '0.75rem', fontWeight: '700', padding: '0.5rem', borderRadius: '4px', textAlign: 'center', zIndex: 30 }} className="animate-slide">
-                  ✅ {simSuccessMsg}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{marginRight: '4px', verticalAlign: 'middle'}}><polyline points="20 6 9 17 4 12"/></svg>{simSuccessMsg}
                 </div>
               )}
             </div>
