@@ -6,7 +6,7 @@ import { useApp } from '../context/AppContext';
 
 export default function LandingPage() {
   const router = useRouter();
-  const { plans } = useApp();
+  const { plans, customers, visits, salons, staff } = useApp();
   
   const [billingInterval, setBillingInterval] = useState('monthly');
   const [activeFaq, setActiveFaq] = useState(null);
@@ -23,6 +23,16 @@ export default function LandingPage() {
   // Interactive Pricing Slider State
   const [stylistCount, setStylistCount] = useState(3);
 
+  // Client History Portal States
+  const [clientPhone, setClientPhone] = useState('');
+  const [clientOtp, setClientOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [clientVerified, setClientVerified] = useState(false);
+  const [clientCustomerRecord, setClientCustomerRecord] = useState(null);
+  const [clientVisits, setClientVisits] = useState([]);
+  const [clientError, setClientError] = useState('');
+  const [clientSuccessMsg, setClientSuccessMsg] = useState('');
+
   // Live Activity Ticker Log State
   const [tickerLogs, setTickerLogs] = useState([
     { id: 1, time: 'Just now', event: 'Classic Cuts & Shaves captured 4-angle alignment for David K.' },
@@ -34,7 +44,7 @@ export default function LandingPage() {
   useEffect(() => {
     if (simStep === 1) {
       setSimPhone('');
-      const targetPhone = '(206) 555-0100';
+      const targetPhone = '(206) 555-0123';
       let currentIdx = 0;
       const interval = setInterval(() => {
         if (currentIdx < targetPhone.length) {
@@ -90,6 +100,64 @@ export default function LandingPage() {
 
   const recommended = getRecommendedPlan(stylistCount);
 
+  // Client History Lookup Handlers
+  const handleClientPhoneSubmit = (e) => {
+    e.preventDefault();
+    setClientError('');
+    setClientSuccessMsg('');
+    const normalized = clientPhone.replace(/\D/g, '');
+    if (!normalized) {
+      setClientError('Please enter a valid mobile number.');
+      return;
+    }
+    // Match against active customer records
+    const found = customers.find(c => c.mobileNumber.replace(/\D/g, '') === normalized);
+    if (!found) {
+      setClientError('No styling record found for this mobile number. Try seed phone: 2065550123');
+      return;
+    }
+    setClientCustomerRecord(found);
+    setOtpSent(true);
+    setClientSuccessMsg('Demo OTP code sent! Use bypass code: 123456');
+  };
+
+  const handleClientOtpVerify = (e) => {
+    e.preventDefault();
+    setClientError('');
+    setClientSuccessMsg('');
+    if (clientOtp !== '123456') {
+      setClientError('Invalid OTP code. Enter bypass code 123456 for testing.');
+      return;
+    }
+    // Load historical visits
+    const foundVisits = visits.filter(v => v.customerId === clientCustomerRecord.id);
+    // Sort visits chronologically
+    const sorted = [...foundVisits].sort((a, b) => new Date(b.date) - new Date(a.date));
+    setClientVisits(sorted);
+    setClientVerified(true);
+  };
+
+  const handleClientLogout = () => {
+    setClientPhone('');
+    setClientOtp('');
+    setOtpSent(false);
+    setClientVerified(false);
+    setClientCustomerRecord(null);
+    setClientVisits([]);
+    setClientError('');
+    setClientSuccessMsg('');
+  };
+
+  const getSalonName = (salonId) => {
+    const s = salons.find(item => item.id === salonId);
+    return s ? s.name : 'Professional Salon';
+  };
+
+  const getStylistName = (staffId) => {
+    const st = staff.find(item => item.id === staffId);
+    return st ? st.name : 'Master Stylist';
+  };
+
   const faqs = [
     {
       question: "How does the haircut photo capture work in a busy shop?",
@@ -112,7 +180,7 @@ export default function LandingPage() {
   return (
     <div className="animate-fade" style={{ background: '#07080c', minHeight: '100vh', position: 'relative', overflowX: 'hidden', color: '#f3f4f6' }}>
       
-      {/* Dynamic Moving Spotlights */}
+      {/* Dynamic Spotlights */}
       <div className="spotlight spotlight-left" style={{ position: 'absolute', top: '-10%', left: '10%', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none', zIndex: 0 }} />
       <div className="spotlight spotlight-right" style={{ position: 'absolute', top: '35%', right: '-10%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(236, 72, 153, 0.08) 0%, transparent 70%)', filter: 'blur(90px)', pointerEvents: 'none', zIndex: 0 }} />
 
@@ -126,10 +194,11 @@ export default function LandingPage() {
             Snip<span style={{ color: '#fff' }}>Memory</span>
           </div>
           <nav className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: '1.75rem' }}>
-            <a href="#features" className="nav-link" style={{ fontSize: '0.9375rem', color: '#9ca3af', transition: 'color 0.2s' }}>Features</a>
-            <a href="#calculator" className="nav-link" style={{ fontSize: '0.9375rem', color: '#9ca3af', transition: 'color 0.2s' }}>Estimate Plan</a>
-            <a href="#pricing" className="nav-link" style={{ fontSize: '0.9375rem', color: '#9ca3af', transition: 'color 0.2s' }}>Pricing</a>
-            <a href="#faq" className="nav-link" style={{ fontSize: '0.9375rem', color: '#9ca3af', transition: 'color 0.2s' }}>FAQ</a>
+            <a href="#features" className="nav-link" style={{ fontSize: '0.9375rem', color: '#9ca3af' }}>Features</a>
+            <a href="#client-portal" className="nav-link" style={{ fontSize: '0.9375rem', color: '#9ca3af' }}>My Haircut History</a>
+            <a href="#calculator" className="nav-link" style={{ fontSize: '0.9375rem', color: '#9ca3af' }}>Estimate Plan</a>
+            <a href="#pricing" className="nav-link" style={{ fontSize: '0.9375rem', color: '#9ca3af' }}>Pricing</a>
+            <a href="#faq" className="nav-link" style={{ fontSize: '0.9375rem', color: '#9ca3af' }}>FAQ</a>
             <button className="btn btn-secondary btn-sm" onClick={() => router.push('/discovery')} style={{ borderColor: '#6366f1', color: '#818cf8', background: 'rgba(99, 102, 241, 0.08)' }}>Search Salons</button>
             <button className="btn btn-primary btn-sm" onClick={() => router.push('/signup')} style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', border: 'none' }}>Start Trial &rarr;</button>
           </nav>
@@ -144,24 +213,24 @@ export default function LandingPage() {
           <div style={{ textAlign: 'left' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.25)', padding: '0.4rem 0.95rem', borderRadius: '50px', marginBottom: '1.75rem', fontSize: '0.8125rem', color: '#a5b4fc', fontWeight: '600' }}>
               <span style={{ display: 'inline-block', width: '6px', height: '6px', background: '#10b981', borderRadius: '50%', marginRight: '4px' }}></span>
-              Salon & Barbershop Reference Workspace
+              Double-Sided Styling Network
             </div>
             
             <h1 style={{ fontSize: '3.35rem', lineHeight: '1.12', marginBottom: '1.25rem', fontWeight: '800', background: 'linear-gradient(135deg, #ffffff 30%, #94a3b8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.03em' }}>
-              Recreate styles perfectly. Never guess a haircut.
+              Style consistency for salons. History log for clients.
             </h1>
             
             <p style={{ fontSize: '1.125rem', color: '#94a3b8', marginBottom: '2.5rem', lineHeight: '1.6', maxWidth: '520px' }}>
-              The high-performance B2B reference database for modern grooming salons. Store 4-angle visual histories, styling guidelines, and coordinate WhatsApp retention notifications effortlessly.
+              The high-performance B2B reference database for salons coupled with a secure B2C personal haircut timeline search engine for style-conscious clients.
             </p>
             
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               <button className="btn btn-primary btn-lg" onClick={() => router.push('/signup')} style={{ padding: '0.95rem 2rem', fontSize: '1rem', background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', border: 'none' }}>
                 Start 14-Day Free Trial
               </button>
-              <button className="btn btn-secondary btn-lg" onClick={() => router.push('/discovery')} style={{ padding: '0.95rem 2rem', fontSize: '1rem' }}>
-                Search Salons Registry
-              </button>
+              <a href="#client-portal" className="btn btn-secondary btn-lg" style={{ padding: '0.95rem 2rem', fontSize: '1rem' }}>
+                Retrieve My Haircut History
+              </a>
             </div>
 
             {/* Live Operational Ticker */}
@@ -184,8 +253,6 @@ export default function LandingPage() {
 
           {/* Hero Right: Live Interactive Tablet Simulator Mockup */}
           <div style={{ display: 'flex', justifyContent: 'center', position: 'relative' }}>
-            
-            {/* Ambient Backlight Glow */}
             <div style={{ position: 'absolute', top: '10%', left: '10%', right: '10%', bottom: '10%', background: 'rgba(99, 102, 241, 0.2)', filter: 'blur(60px)', zIndex: 0 }} />
 
             <div 
@@ -381,8 +448,185 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* --- CLIENT PORTAL (STYLE HISTORY LOOKUP) SECTION --- */}
+      <section id="client-portal" style={{ padding: '6.5rem 0', background: '#0b0c13', borderTop: '1px solid rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+        <div className="container" style={{ maxWidth: '900px' }}>
+          
+          <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
+            <span style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Client Portal Access</span>
+            <h2 style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-0.02em', marginTop: '0.25rem' }}>Retrieve Your Style Reference History</h2>
+            <p style={{ color: '#94a3b8', fontSize: '1rem', marginTop: '0.5rem', maxWidth: '500px', margin: '0.5rem auto 0 auto' }}>
+              Instantly view your past style outlines, custom lengths, and dates logged across any SnipMemory-powered barbershop.
+            </p>
+          </div>
+
+          <div className="card" style={{ background: '#11121c', padding: '2.5rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
+            
+            {clientError && (
+              <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontWeight: 'bold' }}>⚠️</span> {clientError}
+              </div>
+            )}
+
+            {clientSuccessMsg && (
+              <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+                {clientSuccessMsg}
+              </div>
+            )}
+
+            {/* Authentication Gateway */}
+            {!clientVerified ? (
+              <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+                {!otpSent ? (
+                  <form onSubmit={handleClientPhoneSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    <div className="form-group">
+                      <label className="form-label" style={{ color: '#cbd5e1' }}>Register / Mobile Number</label>
+                      <input 
+                        type="text" 
+                        className="form-control" 
+                        placeholder="e.g. 2065550123" 
+                        value={clientPhone}
+                        onChange={(e) => setClientPhone(e.target.value)}
+                        required
+                        style={{ background: '#090a0f', borderColor: 'rgba(255,255,255,0.1)', padding: '0.85rem' }}
+                      />
+                      <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginTop: '0.35rem' }}>
+                        Hint: Use seed number <strong>2065550123</strong> to test the demo profile history lookup.
+                      </span>
+                    </div>
+
+                    <button type="submit" className="btn btn-primary btn-block" style={{ padding: '0.85rem' }}>
+                      Request Access Passcode
+                    </button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleClientOtpVerify} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    <div style={{ background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.2)', padding: '1rem', borderRadius: '8px', fontSize: '0.8125rem', color: '#cbd5e1', lineHeight: '1.5' }}>
+                      <strong>Demo Bypass:</strong> A mock SMS OTP has been generated for client verification. Type <strong>123456</strong> to retrieve Alexander's styling timeline.
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ color: '#cbd5e1' }}>Enter 6-Digit Verification Code</label>
+                      <input 
+                        type="text" 
+                        className="form-control" 
+                        placeholder="e.g. 123456" 
+                        value={clientOtp}
+                        onChange={(e) => setClientOtp(e.target.value)}
+                        maxLength={6}
+                        required
+                        style={{ background: '#090a0f', borderColor: 'rgba(255,255,255,0.1)', textAlign: 'center', letterSpacing: '0.25em', fontSize: '1.25rem', padding: '0.75rem' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button type="button" className="btn btn-secondary btn-block" onClick={() => setOtpSent(false)}>
+                        Change Phone
+                      </button>
+                      <button type="submit" className="btn btn-primary btn-block">
+                        Verify & Load History
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            ) : (
+              /* Verified Client Timeline display */
+              <div className="animate-fade">
+                <div className="flex-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '1.25rem', marginBottom: '2rem' }}>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>Active Session</span>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: '800', margin: '0.25rem 0 0 0', color: '#fff' }}>{clientCustomerRecord.name}</h3>
+                  </div>
+                  <button className="btn btn-secondary btn-sm" onClick={handleClientLogout}>
+                    Logout Profile
+                  </button>
+                </div>
+
+                {clientVisits.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', position: 'relative' }}>
+                    
+                    {/* Vertical connector line */}
+                    <div style={{ position: 'absolute', top: '10px', bottom: '10px', left: '16px', width: '2px', background: 'rgba(99, 102, 241, 0.15)', zIndex: 0 }} />
+
+                    {clientVisits.map((visit, index) => (
+                      <div key={visit.id} className="animate-slide" style={{ display: 'flex', gap: '1.5rem', position: 'relative', zIndex: 1 }}>
+                        
+                        {/* Circle node indicator */}
+                        <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#6366f1', border: '6px solid #11121c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <span style={{ width: '6px', height: '6px', background: '#fff', borderRadius: '50%' }}></span>
+                        </div>
+
+                        {/* Card details */}
+                        <div style={{ flex: 1, background: '#090a0f', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '1.5rem' }}>
+                          <div className="flex-between" style={{ flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+                            <div>
+                              <strong style={{ fontSize: '1rem', color: '#fff' }}>{getSalonName(visit.salonId)}</strong>
+                              <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginTop: '0.15rem' }}>
+                                Handled by stylist: <strong>{getStylistName(visit.staffId)}</strong>
+                              </span>
+                            </div>
+                            <span style={{ fontSize: '0.8125rem', color: '#cbd5e1', background: 'rgba(255,255,255,0.05)', padding: '0.25rem 0.65rem', borderRadius: '50px' }}>
+                              {new Date(visit.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </span>
+                          </div>
+
+                          <div style={{ background: '#111219', border: '1px solid rgba(255,255,255,0.04)', padding: '0.85rem 1rem', borderRadius: '8px', fontSize: '0.875rem', color: '#cbd5e1', marginBottom: '1.25rem' }}>
+                            <strong>Barber Notes:</strong> {visit.note}
+                          </div>
+
+                          {/* 4-Angle captures */}
+                          <div>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700', display: 'block', marginBottom: '0.75rem' }}>
+                              Visual Cut Alignment Guides
+                            </span>
+                            
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.75rem' }}>
+                              {Object.entries(visit.photos || {}).map(([angle, svgContent]) => (
+                                <div key={angle} style={{ background: '#111219', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '0.5rem', textAlign: 'center' }}>
+                                  <div 
+                                    style={{ width: '100%', aspectRatio: '1/1', overflow: 'hidden', borderRadius: '6px', marginBottom: '0.4rem' }}
+                                    dangerouslySetInnerHTML={{ __html: svgContent }}
+                                  />
+                                  <span style={{ fontSize: '0.6875rem', color: '#cbd5e1', textTransform: 'capitalize', fontWeight: '500' }}>
+                                    {angle} Profile
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Style Tags */}
+                          {visit.styleTags && visit.styleTags.length > 0 && (
+                            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '1.25rem' }}>
+                              {visit.styleTags.map(tag => (
+                                <span key={tag} style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', background: 'rgba(99, 102, 241, 0.12)', color: '#a5b4fc', borderRadius: '4px', border: '1px solid rgba(99, 102, 241, 0.15)' }}>
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                    No visit details have been logged yet for your profile. Check back after your next styling appointment!
+                  </div>
+                )}
+
+              </div>
+            )}
+
+          </div>
+
+        </div>
+      </section>
+
       {/* Dynamic Feature Switcher Showcase */}
-      <section id="features" style={{ padding: '6rem 0', background: '#0b0c13', borderTop: '1px solid rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+      <section id="features" style={{ padding: '6rem 0', background: '#07080c' }}>
         <div className="container" style={{ maxWidth: '1000px' }}>
           <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
             <h2 style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-0.02em' }}>Built Specifically for Professional Salons</h2>
@@ -416,7 +660,7 @@ export default function LandingPage() {
             </button>
           </div>
 
-          {/* Interactive Feature Visual Representation Box */}
+          {/* Feature Showcase Box */}
           <div className="card" style={{ background: '#11121c', padding: '2.5rem', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2.5rem', alignItems: 'center' }}>
             
             {activeFeatureTab === 'camera' && (
@@ -425,7 +669,7 @@ export default function LandingPage() {
                   <span style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Visual Reference Library</span>
                   <h3 style={{ fontSize: '1.75rem', fontWeight: '800', margin: '0.5rem 0' }}>Capture perfection in 15 seconds</h3>
                   <p style={{ color: '#94a3b8', fontSize: '0.9375rem', lineHeight: '1.6', marginBottom: '1.5rem' }}>
-                    barbers photograph clients from four clean angles (Front, Left, Right, Back). Our specialized layout lets stylists overlay alignment grids to verify vertical guide lines. Ensures repeat haircuts look exactly the same.
+                    Barbers photograph clients from four clean angles (Front, Left, Right, Back). Our specialized layout lets stylists overlay alignment grids to verify vertical guide lines. Ensures repeat haircuts look exactly the same.
                   </p>
                   <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', listStyle: 'none', padding: 0 }}>
                     <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#cbd5e1' }}>
@@ -528,8 +772,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Interactive Pricing Estimator & Slider */}
-      <section id="calculator" style={{ padding: '6rem 0', position: 'relative' }}>
+      {/* Interactive Pricing Estimator */}
+      <section id="calculator" style={{ padding: '6rem 0', position: 'relative', background: '#0b0c13' }}>
         <div className="container" style={{ maxWidth: '800px' }}>
           <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
             <span style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Interactive Estimator</span>
@@ -588,7 +832,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" style={{ padding: '6rem 0', background: '#0b0c13', borderTop: '1px solid rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+      <section id="pricing" style={{ padding: '6rem 0', background: '#07080c' }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
             <h2 style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-0.02em' }}>Transparent Plans for Every Roster</h2>
@@ -675,8 +919,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials section */}
-      <section style={{ padding: '6rem 0' }}>
+      {/* Testimonials */}
+      <section style={{ padding: '6rem 0', background: '#0b0c13' }}>
         <div className="container" style={{ maxWidth: '900px' }}>
           <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
             <span style={{ fontSize: '0.75rem', color: '#ec4899', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Endorsements</span>
@@ -710,7 +954,7 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" style={{ padding: '6rem 0', background: '#0b0c13', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <section id="faq" style={{ padding: '6rem 0', background: '#07080c', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
         <div className="container" style={{ maxWidth: '800px' }}>
           <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
             <h2 style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-0.02em' }}>Frequently Asked Questions</h2>
