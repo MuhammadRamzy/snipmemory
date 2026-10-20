@@ -3,14 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0b0b12" />
-    <meta name="description" content="SnipMemory remembers every haircut — 4-angle photos, clipper settings and notes for every client, plus WhatsApp reminders that bring them back." />
+    <meta name="description" content="SnipMemory — billing, UPI QR, staff commission and udhaar khata for salons and barber shops. Runs on any phone." />
+    <meta name="theme-color" content="#0f766e" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link id="manifest" rel="manifest" href="/owner.webmanifest" />
+    <link id="apple-icon" rel="apple-touch-icon" href="/icons/owner-192.png" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <script>
+      // Owner and Staff are two separately installable apps: pick the manifest before the browser reads it.
+      (function () {
+        var p = location.pathname;
+        var app = p.indexOf('/staff') === 0 ? 'staff' : 'owner';
+        document.getElementById('manifest').href = '/' + app + '.webmanifest';
+        document.getElementById('apple-icon').href = '/icons/' + app + '-192.png';
+        document.documentElement.dataset.app = p.indexOf('/admin') === 0 ? 'admin' : app;
+        if (app === 'staff') document.querySelector('meta[name=theme-color]').content = '#c2410c';
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <title>SnipMemory — the memory of every haircut</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <title>SnipMemory — Salon billing & management</title>
   </head>
   <body>
     <div id="root"></div>

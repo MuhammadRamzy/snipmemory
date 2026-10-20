@@ -1,0 +1,18 @@
+{
+  "id": "/staff",
+  "name": "SnipMemory Staff",
+  "short_name": "Salon Staff",
+  "description": "Make bills, show UPI QR and see your own earnings.",
+  "start_url": "/staff",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f5f1",
+  "theme_color": "#c2410c",
+  "icons": [
+    { "src": "/icons/staff-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/staff-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/staff-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [{ "name": "New bill", "url": "/staff/bill" }]
+}

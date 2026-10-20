@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import type { AppEnv, BillItemRow, BillRow, Ctx, CustomerRow, StaffRow } from '../types';
 import { audit } from '../lib/audit';
-import { computeBill, type LineInput } from '../lib/billing';
+import { computeBill, type LineInput } from '../../../shared/billing';
 import { newId, randomToken } from '../lib/crypto';
 import { DAY, all, first, now } from '../lib/db';
 import { addDays, dayOf, isDay } from '../lib/day';
@@ -37,6 +37,8 @@ const billSchema = z.object({
     .max(40),
   discount: money.default(0),
   payments: z.object({ cash: money.default(0), upi: money.default(0), card: money.default(0), advance: money.default(0) }),
+  /** Old udhaar the customer clears together with this bill. */
+  collectDue: z.object({ amount: money, mode: z.enum(['cash', 'upi', 'card']) }).nullable().optional(),
   note: z.string().max(300).nullable().optional(),
   queueId: z.string().nullable().optional(),
   /** Device time for bills made offline; accepted if within the last 3 days. */
@@ -135,6 +137,8 @@ bills.post('/', shopAccess('any'), async (c) => {
   const due = totals.total - paid;
   if ((due > 0 || p.advance > 0) && !customer) throw badRequest('Add the customer’s mobile number to keep udhaar or use advance.');
   if (p.advance > 0 && p.advance > Math.max(0, customer!.balance)) throw badRequest('Customer does not have that much advance.');
+  const oldDue = input.collectDue?.amount ?? 0;
+  if (oldDue > 0 && (!customer || oldDue > -customer.balance)) throw badRequest('This is more than the old udhaar.');
 
   const id = newId('bil');
   const statements = [
@@ -195,13 +199,20 @@ bills.post('/', shopAccess('any'), async (c) => {
           .bind(newId('led'), shop.id, customer.id, -p.advance, id, ctx.me.id, day, createdAt),
       );
     }
+    if (oldDue > 0) {
+      statements.push(
+        db
+          .prepare("INSERT INTO ledger (id, shop_id, customer_id, kind, amount, mode, bill_id, staff_id, note, day, created_at) VALUES (?, ?, ?, 'due_paid', ?, ?, ?, ?, ?, ?, ?)")
+          .bind(newId('led'), shop.id, customer.id, oldDue, input.collectDue!.mode, id, ctx.me.id, 'Paid with bill', day, createdAt),
+      );
+    }
     statements.push(
       db
         .prepare(
           `UPDATE customers SET balance = balance - ?, visit_count = visit_count + 1, total_spend = total_spend + ?,
              last_visit_at = MAX(COALESCE(last_visit_at, 0), ?), updated_at = ? WHERE id = ?`,
         )
-        .bind(due + p.advance, totals.total, createdAt, t, customer.id),
+        .bind(due + p.advance - oldDue, totals.total, createdAt, t, customer.id),
     );
   }
   if (input.queueId) {

@@ -1,0 +1,174 @@
+@import 'tailwindcss';
+
+/* SnipMemory v3 — calm, high-contrast, big-touch design for shop floors.
+   Owner app is teal, Staff app is saffron so people never mix them up. */
+:root {
+  --bg: #f6f5f1;
+  --surface: #ffffff;
+  --surface-2: #efede7;
+  --line: #e2dfd7;
+  --ink: #1c1917;
+  --muted: #6b645c;
+  --brand: #0f766e;
+  --brand-ink: #ffffff;
+  --brand-soft: #dff3ef;
+  --brand-text: #0b5c55;
+  --money: #15803d;
+  --money-soft: #e3f5e8;
+  --due: #c2410c;
+  --due-soft: #fdeee4;
+  --danger: #b91c1c;
+  --danger-soft: #fdeaea;
+  --warn: #a16207;
+  --warn-soft: #fdf5d8;
+  color-scheme: light;
+}
+:root[data-app='staff'] {
+  --brand: #c2410c;
+  --brand-soft: #fdebdf;
+  --brand-text: #9a3412;
+}
+:root[data-app='admin'] {
+  --brand: #312e81;
+  --brand-soft: #e7e6f8;
+  --brand-text: #312e81;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #11100e;
+    --surface: #1b1a17;
+    --surface-2: #26241f;
+    --line: #34312a;
+    --ink: #f3f1ec;
+    --muted: #a8a196;
+    --brand: #14b8a6;
+    --brand-ink: #062b28;
+    --brand-soft: #0f2f2b;
+    --brand-text: #7ee2d4;
+    --money: #4ade80;
+    --money-soft: #12291a;
+    --due: #fb923c;
+    --due-soft: #2e1a0e;
+    --danger: #f87171;
+    --danger-soft: #2e1414;
+    --warn: #facc15;
+    --warn-soft: #2b250c;
+    color-scheme: dark;
+  }
+  :root[data-app='staff'] {
+    --brand: #fb923c;
+    --brand-ink: #2a1205;
+    --brand-soft: #34190a;
+    --brand-text: #fdba74;
+  }
+  :root[data-app='admin'] {
+    --brand: #a5b4fc;
+    --brand-ink: #11103a;
+    --brand-soft: #1e1d45;
+    --brand-text: #c7d2fe;
+  }
+}
+
+@theme inline {
+  --font-sans: 'Noto Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-text: var(--brand-text);
+  --color-money: var(--money);
+  --color-money-soft: var(--money-soft);
+  --color-due: var(--due);
+  --color-due-soft: var(--due-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
+}
+input,
+textarea,
+select,
+button {
+  font: inherit;
+}
+input,
+textarea,
+select {
+  font-size: 17px; /* stops iOS zooming */
+}
+button {
+  touch-action: manipulation;
+}
+
+@utility pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes sheet {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+  }
+}
+.rise {
+  animation: rise 0.22s ease-out;
+}
+.sheet-in {
+  animation: sheet 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.pop {
+  animation: pop 0.35s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .sheet-in,
+  .pop {
+    animation: none;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}

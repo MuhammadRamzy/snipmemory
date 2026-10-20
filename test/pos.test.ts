@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
-import { computeBill } from '../worker/src/lib/billing';
+import { computeBill } from '../shared/billing';
 import { OWNER_PIN, Device, addBarber, clientRef, newShop, phone, svc } from './helpers';
 
 const noGst = { enabled: false, rate: 18, inclusive: true };
@@ -121,7 +121,17 @@ describe('billing', () => {
     expect(list.data.totals.due).toBe(6000);
     const id = list.data.customers[0].id;
     expect((await owner.post(`/api/shop/customers/${id}/ledger`, { kind: 'due_paid', amount: 9000, mode: 'upi' })).status).toBe(400);
-    const paid = await owner.post(`/api/shop/customers/${id}/ledger`, { kind: 'due_paid', amount: 6000, mode: 'upi' });
+    // Clear part of the old udhaar while paying for today's cut.
+    const withDue = await owner.post('/api/shop/bills', {
+      clientRef: clientRef(),
+      customerId: id,
+      items: [svc(catalog, 'Shave')],
+      payments: { upi: 5000 },
+      collectDue: { amount: 2000, mode: 'upi' },
+    });
+    expect(withDue.status).toBe(201);
+    expect((await owner.get(`/api/shop/customers/${id}`)).data.customer.balance).toBe(-4000);
+    const paid = await owner.post(`/api/shop/customers/${id}/ledger`, { kind: 'due_paid', amount: 4000, mode: 'upi' });
     expect(paid.data.customer.balance).toBe(0);
 
     // Advance, then use it on the next bill.
@@ -130,7 +140,7 @@ describe('billing', () => {
     expect(next.status).toBe(201);
     const detail = await owner.get(`/api/shop/customers/${id}`);
     expect(detail.data.customer.balance).toBe(40000);
-    expect(detail.data.customer.visitCount).toBe(2);
+    expect(detail.data.customer.visitCount).toBe(3);
     expect(detail.data.ledger.length).toBeGreaterThanOrEqual(4);
   });
 

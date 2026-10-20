@@ -272,9 +272,10 @@ me.get('/home', shopAccess('any'), async (c) => {
   const db = c.env.DB;
   const today = dayOf(ctx.shop.timezone);
   const [todayWork, monthWork, attendance, queue] = await Promise.all([
-    first<{ bills: number; sales: number; commission: number; customers: number }>(
+    first<{ bills: number; sales: number; commission: number; services: number }>(
       db,
-      `SELECT COUNT(DISTINCT b.id) AS bills, COALESCE(SUM(i.net), 0) AS sales, COALESCE(SUM(i.commission), 0) AS commission, COUNT(DISTINCT b.customer_id) AS customers
+      `SELECT COUNT(DISTINCT b.id) AS bills, COALESCE(SUM(i.net), 0) AS sales, COALESCE(SUM(i.commission), 0) AS commission,
+         COALESCE(SUM(CASE WHEN i.kind != 'product' THEN i.qty END), 0) AS services
        FROM bill_items i JOIN bills b ON b.id = i.bill_id WHERE i.staff_id = ? AND b.day = ? AND b.voided_at IS NULL`,
       ctx.me.id,
       today,

@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import type { AppEnv, BillItemRow, BillRow, ShopRow } from '../types';
 import { all, first, now } from '../lib/db';
 import { notFound } from '../lib/http';
-import { splitGst } from '../lib/billing';
+import { splitGst } from '../../../shared/billing';
 import { plansPublic } from './auth';
 
 const publicApi = new Hono<AppEnv>();

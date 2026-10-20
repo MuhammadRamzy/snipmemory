@@ -1,0 +1,18 @@
+{
+  "id": "/owner",
+  "name": "SnipMemory Owner",
+  "short_name": "Salon Owner",
+  "description": "Run your salon: billing, staff, udhaar, expenses and reports.",
+  "start_url": "/owner",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f5f1",
+  "theme_color": "#0f766e",
+  "icons": [
+    { "src": "/icons/owner-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/owner-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/owner-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [{ "name": "New bill", "url": "/owner/bill" }]
+}
