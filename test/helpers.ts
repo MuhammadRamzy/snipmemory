@@ -2,58 +2,73 @@ import { SELF } from 'cloudflare:test';
 
 const ORIGIN = 'https://snipmemory.test';
 
-/** Minimal browser: keeps cookies between requests and parses JSON. */
-export class Browser {
+/** A phone with one of the apps installed: keeps cookies and sends the app header. */
+export class Device {
   cookies = new Map<string, string>();
+  ip = `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}`;
+  constructor(public app: 'owner' | 'staff' | 'admin' = 'owner') {}
 
   async request(method: string, path: string, body?: unknown, headers: Record<string, string> = {}) {
-    const init: RequestInit = { method, headers: { origin: ORIGIN, ...headers } };
-    if (body instanceof ArrayBuffer || body instanceof Uint8Array) {
-      init.body = body;
-    } else if (body !== undefined) {
+    const h: Record<string, string> = { origin: ORIGIN, 'cf-connecting-ip': this.ip, ...headers };
+    if (this.app !== 'admin') h['x-app'] = this.app;
+    const init: RequestInit = { method, headers: h };
+    if (body instanceof Uint8Array) init.body = body;
+    else if (body !== undefined) {
       init.body = JSON.stringify(body);
-      (init.headers as Record<string, string>)['content-type'] = 'application/json';
+      h['content-type'] = 'application/json';
     }
-    if (this.cookies.size) {
-      (init.headers as Record<string, string>).cookie = [...this.cookies].map(([k, v]) => `${k}=${v}`).join('; ');
-    }
+    if (this.cookies.size) h.cookie = [...this.cookies].map(([k, v]) => `${k}=${v}`).join('; ');
     const res = await SELF.fetch(`${ORIGIN}${path}`, init);
     for (const header of res.headers.getSetCookie()) {
       const [pair, ...attrs] = header.split(';');
       const [name, value] = pair.split('=');
-      const expired = attrs.some((a) => /max-age=0/i.test(a.trim()) || /expires=thu, 01 jan 1970/i.test(a.trim()));
-      if (!value || expired) this.cookies.delete(name.trim());
+      if (!value || attrs.some((a) => /max-age=0/i.test(a))) this.cookies.delete(name.trim());
       else this.cookies.set(name.trim(), value.trim());
     }
     const type = res.headers.get('content-type') ?? '';
-    const data = type.includes('application/json') ? await res.json<any>() : type.startsWith('text/') ? await res.text() : await res.arrayBuffer();
-    return { status: res.status, data, headers: res.headers };
+    const data = type.includes('json') ? await res.json<any>() : await res.text();
+    return { status: res.status, data };
   }
-
-  get = (path: string) => this.request('GET', path);
-  post = (path: string, body: unknown = {}) => this.request('POST', path, body);
-  patch = (path: string, body: unknown) => this.request('PATCH', path, body);
-  put = (path: string, body: unknown, headers?: Record<string, string>) => this.request('PUT', path, body, headers);
-  del = (path: string) => this.request('DELETE', path);
+  get = (p: string) => this.request('GET', p);
+  post = (p: string, b: unknown = {}) => this.request('POST', p, b);
+  patch = (p: string, b: unknown) => this.request('PATCH', p, b);
+  del = (p: string) => this.request('DELETE', p);
 }
 
-let counter = 0;
-
-export async function signup(overrides: Record<string, unknown> = {}) {
-  const browser = new Browser();
-  counter++;
-  const res = await browser.post('/api/auth/signup', {
-    name: `Owner ${counter}`,
-    email: `owner${counter}-${Date.now()}@example.com`,
-    password: 'correct horse battery',
-    salonName: `Fade Lab ${counter}`,
-    country: 'IN',
-    timezone: 'Asia/Kolkata',
-    ...overrides,
-  });
-  if (res.status !== 201) throw new Error(`signup failed: ${JSON.stringify(res.data)}`);
-  const salonId: string = res.data.memberships[0].salon.id;
-  return { browser, salonId, me: res.data };
+let n = 0;
+export function phone(): string {
+  n++;
+  return `9${String(Date.now() % 1e6).padStart(6, '0')}${String(n).padStart(3, '0')}`;
 }
 
-export const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46, 0x49, 0x46, 0, 1, 0xff, 0xd9]);
+export const OWNER_PIN = '482913';
+
+export async function newShop(shopType = 'gents') {
+  const owner = new Device('owner');
+  const ownerPhone = phone();
+  const res = await owner.post('/api/auth/signup', { name: 'Ramesh', phone: ownerPhone, pin: OWNER_PIN, shopName: 'Style Point', city: 'Kochi', shopType });
+  if (res.status !== 201) throw new Error(JSON.stringify(res.data));
+  const catalog = (await owner.get('/api/shop/catalog')).data;
+  const me = (await owner.get('/api/auth/me')).data;
+  return { owner, ownerPhone, catalog, me };
+}
+
+export async function addBarber(owner: Device, opts: { name?: string; commissionPct?: number; pin?: string } = {}) {
+  const p = phone();
+  const pin = opts.pin ?? '4826';
+  const res = await owner.post('/api/shop/staff', { name: opts.name ?? 'Suresh', phone: p, pin, commissionPct: opts.commissionPct ?? 40 });
+  if (res.status !== 201) throw new Error(JSON.stringify(res.data));
+  const device = new Device('staff');
+  const login = await device.post('/api/auth/login', { phone: p, pin, app: 'staff' });
+  if (login.status !== 200) throw new Error(JSON.stringify(login.data));
+  return { id: res.data.id as string, phone: p, device };
+}
+
+let ref = 0;
+export const clientRef = () => `ref-${Date.now()}-${++ref}`;
+
+export function svc(catalog: any, name: string) {
+  const s = catalog.services.find((x: any) => x.name === name);
+  if (!s) throw new Error(`no service ${name}`);
+  return { kind: 'service', refId: s.id, name: s.name, qty: 1, unitPrice: s.price };
+}

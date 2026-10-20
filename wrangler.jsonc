@@ -8,7 +8,7 @@
   // API routes always hit the Worker first; every other path falls back to the SPA.
   "assets": {
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*", "/u/*"]
+    "run_worker_first": ["/api/*"]
   },
   "d1_databases": [
     {
@@ -23,20 +23,16 @@
     // Create with: npx wrangler r2 bucket create snipmemory-media
     { "binding": "MEDIA", "bucket_name": "snipmemory-media" }
   ],
-  // Reminder dispatcher, trial expiry, credit resets, session cleanup.
-  "triggers": { "crons": ["*/15 * * * *"] },
+  // Nightly cleanup (03:00 IST).
+  "triggers": { "crons": ["30 21 * * *"] },
   "vars": {
     "APP_ENV": "development",
     "APP_URL": "http://localhost:5173",
-    "MESSAGING_PROVIDER": "log",
-    "OTP_CHANNEL": "sms",
-    "PLATFORM_ADMIN_EMAILS": "admin@snipmemory.app"
+    "PLATFORM_UPI_VPA": "snipmemory@okicici",
+    "PLATFORM_UPI_NAME": "SnipMemory",
+    "SUPPORT_WHATSAPP": "919000000000"
   },
-  // Secrets (set with `npx wrangler secret put NAME --env production`):
-  //   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
-  //   RESEND_API_KEY, EMAIL_FROM
-  //   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM
-  //   WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_REMINDER_TEMPLATE, WHATSAPP_OTP_TEMPLATE
+  // No secrets needed: there is no payment gateway or SMS provider.
   "observability": { "enabled": true },
 
   // Production: build with `CLOUDFLARE_ENV=production npm run build`, then `npx wrangler deploy`.
@@ -49,12 +45,13 @@
         { "binding": "DB", "database_name": "snipmemory", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
       ],
       "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "snipmemory-media" }],
-      "triggers": { "crons": ["*/15 * * * *"] },
+      "triggers": { "crons": ["30 21 * * *"] },
       "vars": {
         "APP_ENV": "production",
         "APP_URL": "https://snipmemory.app",
-        "MESSAGING_PROVIDER": "live",
-        "OTP_CHANNEL": "whatsapp"
+        "PLATFORM_UPI_VPA": "REPLACE_ME@upi",
+        "PLATFORM_UPI_NAME": "SnipMemory",
+        "SUPPORT_WHATSAPP": "91XXXXXXXXXX"
       }
     }
   }

@@ -1,14 +1,18 @@
 import type { Env } from './env';
 
-export type Role = 'owner' | 'manager' | 'stylist';
+export type Role = 'owner' | 'manager' | 'staff';
+export type App = 'owner' | 'staff' | 'admin';
+export type Mode = 'cash' | 'upi' | 'card';
 
 export interface UserRow {
   id: string;
-  email: string;
+  phone: string;
   name: string;
-  phone: string | null;
-  password_hash: string;
+  pin_hash: string;
+  pin_must_change: number;
+  password_hash: string | null;
   is_platform_admin: number;
+  language: string;
   disabled_at: number | null;
   created_at: number;
   last_login_at: number | null;
@@ -16,50 +20,41 @@ export interface UserRow {
 
 export interface SessionRow {
   id: string;
-  kind: 'user' | 'station' | 'client';
-  user_id: string | null;
-  salon_id: string | null;
-  passport_id: string | null;
+  app: App;
+  user_id: string;
+  shop_id: string | null;
   impersonator_id: string | null;
-  acting_member_id: string | null;
-  acting_until: number | null;
   expires_at: number;
   created_at: number;
   last_seen_at: number;
 }
 
-export interface SalonRow {
+export interface ShopRow {
   id: string;
-  slug: string;
+  owner_user_id: string;
   name: string;
+  shop_type: 'gents' | 'unisex' | 'ladies' | 'spa';
   phone: string | null;
-  email: string | null;
   address: string | null;
   city: string | null;
-  country: string;
+  state: string | null;
   timezone: string;
-  currency: string;
-  brand_color: string;
-  booking_url: string | null;
-  default_cadence_days: number;
-  reminders_enabled: number;
-  reminder_channel: 'whatsapp' | 'sms';
-  reminder_template: string | null;
-  send_window_start: number;
-  send_window_end: number;
+  upi_vpa: string | null;
+  upi_name: string | null;
+  gst_enabled: number;
+  gstin: string | null;
+  gst_rate: number;
+  gst_inclusive: number;
+  bill_prefix: string;
+  next_bill_no: number;
+  bill_footer: string | null;
+  staff_can_discount: number;
+  staff_max_discount: number;
+  staff_see_phone: number;
+  winback_days: number;
   plan_id: string;
-  billing_interval: 'month' | 'year';
-  subscription_status: 'trialing' | 'active' | 'past_due' | 'canceled';
-  trial_ends_at: number | null;
-  current_period_end: number | null;
-  past_due_since: number | null;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
-  message_credits: number;
-  bonus_credits: number;
-  credits_reset_at: number | null;
-  referral_code: string | null;
-  referred_by_salon_id: string | null;
+  plan_expires_at: number | null;
+  trial: number;
   onboarded_at: number | null;
   suspended_at: number | null;
   suspended_reason: string | null;
@@ -68,68 +63,17 @@ export interface SalonRow {
   deleted_at: number | null;
 }
 
-export interface MemberRow {
+export interface StaffRow {
   id: string;
-  salon_id: string;
-  user_id: string | null;
-  display_name: string;
-  role: Role;
-  pin_hash: string | null;
-  active: number;
-  created_at: number;
-}
-
-export interface ClientRow {
-  id: string;
-  salon_id: string;
-  passport_id: string | null;
+  shop_id: string;
+  user_id: string;
   name: string;
-  phone: string;
-  email: string | null;
-  notes: string | null;
-  hair_profile: string;
-  cadence_days: number | null;
-  photo_consent_at: number | null;
-  marketing_consent_at: number | null;
-  opted_out_at: number | null;
-  unsubscribe_token: string;
-  visit_count: number;
-  total_spend: number;
-  last_visit_at: number | null;
-  next_reminder_at: number | null;
-  last_reminded_at: number | null;
-  created_at: number;
-  updated_at: number;
-  deleted_at: number | null;
-}
-
-export interface VisitRow {
-  id: string;
-  salon_id: string;
-  client_id: string;
-  member_id: string | null;
-  service: string;
-  style_tags: string;
-  technique: string;
-  notes: string | null;
-  products: string | null;
-  duration_minutes: number | null;
-  price: number | null;
-  repeat_of_visit_id: string | null;
-  recovered_by_message_id: string | null;
-  created_at: number;
-  deleted_at: number | null;
-}
-
-export interface PhotoRow {
-  id: string;
-  salon_id: string;
-  visit_id: string;
-  angle: 'front' | 'left' | 'right' | 'back' | 'detail';
-  r2_key: string;
-  content_type: string;
-  bytes: number;
-  blurred: number;
+  role: Role;
+  commission_pct: number;
+  product_commission_pct: number;
+  monthly_salary: number;
+  color: string;
+  active: number;
   created_at: number;
 }
 
@@ -138,29 +82,94 @@ export interface PlanRow {
   name: string;
   tagline: string;
   max_staff: number;
-  max_clients: number;
-  monthly_message_credits: number;
+  monthly_bill_limit: number;
+  price_month: number;
+  price_year: number;
   features: string;
   capabilities: string;
   is_public: number;
   sort_order: number;
 }
 
-/** Resolved permissions of the caller for one salon. */
-export interface Access {
-  salon: SalonRow;
-  kind: 'user' | 'station';
-  role: Role | null;
-  memberId: string | null;
-  userId: string | null;
+export interface CustomerRow {
+  id: string;
+  shop_id: string;
+  name: string;
+  phone: string | null;
+  gender: string | null;
+  birthday: string | null;
+  notes: string | null;
+  balance: number;
+  visit_count: number;
+  total_spend: number;
+  last_visit_at: number | null;
+  created_at: number;
+  updated_at: number;
+  deleted_at: number | null;
+}
+
+export interface BillRow {
+  id: string;
+  shop_id: string;
+  bill_no: number;
+  client_ref: string;
+  public_token: string;
+  customer_id: string | null;
+  customer_name: string | null;
+  customer_phone: string | null;
+  staff_id: string;
+  created_by: string;
+  subtotal: number;
+  discount: number;
+  tax: number;
+  total: number;
+  paid_cash: number;
+  paid_upi: number;
+  paid_card: number;
+  paid_advance: number;
+  due: number;
+  note: string | null;
+  day: string;
+  created_at: number;
+  voided_at: number | null;
+  void_reason: string | null;
+  voided_by: string | null;
+}
+
+export interface BillItemRow {
+  id: string;
+  bill_id: string;
+  shop_id: string;
+  kind: 'service' | 'product' | 'custom';
+  ref_id: string | null;
+  name: string;
+  qty: number;
+  unit_price: number;
+  amount: number;
+  net: number;
+  staff_id: string;
+  commission: number;
+  cost: number;
+}
+
+/** Who is calling, resolved from the session for `/api/shop/*`. */
+export interface Ctx {
+  app: 'owner' | 'staff';
+  user: UserRow;
+  shop: ShopRow;
+  me: StaffRow;
+  plan: PlanRow;
+  /** owner-app with owner/manager role */
+  isManager: boolean;
+  isOwner: boolean;
   impersonatorId: string | null;
+  sessionId: string;
 }
 
 export type AppEnv = {
   Bindings: Env;
   Variables: {
-    userSession: SessionRow | null | undefined;
-    user: UserRow | null | undefined;
-    access: Access;
+    ctx: Ctx;
+    adminUser: UserRow;
   };
 };

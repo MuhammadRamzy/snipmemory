@@ -1,17 +1,6 @@
-import type { ClientRow, MemberRow, PhotoRow, PlanRow, SalonRow, UserRow, VisitRow } from '../types';
+import type { BillItemRow, BillRow, CustomerRow, PlanRow, ShopRow, StaffRow } from '../types';
 import { parseJson } from './http';
 import { capabilities } from './plans';
-
-export function serializeUser(user: UserRow) {
-  return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    phone: user.phone,
-    isPlatformAdmin: Boolean(user.is_platform_admin),
-    createdAt: user.created_at,
-  };
-}
 
 export function serializePlan(plan: PlanRow) {
   return {
@@ -19,105 +8,103 @@ export function serializePlan(plan: PlanRow) {
     name: plan.name,
     tagline: plan.tagline,
     maxStaff: plan.max_staff,
-    maxClients: plan.max_clients,
-    monthlyMessageCredits: plan.monthly_message_credits,
+    monthlyBillLimit: plan.monthly_bill_limit,
+    priceMonth: plan.price_month,
+    priceYear: plan.price_year,
     features: parseJson<string[]>(plan.features, []),
     capabilities: capabilities(plan),
   };
 }
 
-export function serializeSalon(salon: SalonRow) {
+export function serializeShop(shop: ShopRow) {
   return {
-    id: salon.id,
-    slug: salon.slug,
-    name: salon.name,
-    phone: salon.phone,
-    email: salon.email,
-    address: salon.address,
-    city: salon.city,
-    country: salon.country,
-    timezone: salon.timezone,
-    currency: salon.currency,
-    brandColor: salon.brand_color,
-    bookingUrl: salon.booking_url,
-    defaultCadenceDays: salon.default_cadence_days,
-    remindersEnabled: Boolean(salon.reminders_enabled),
-    reminderChannel: salon.reminder_channel,
-    reminderTemplate: salon.reminder_template,
-    sendWindowStart: salon.send_window_start,
-    sendWindowEnd: salon.send_window_end,
-    planId: salon.plan_id,
-    billingInterval: salon.billing_interval,
-    subscriptionStatus: salon.subscription_status,
-    trialEndsAt: salon.trial_ends_at,
-    currentPeriodEnd: salon.current_period_end,
-    messageCredits: salon.message_credits,
-    bonusCredits: salon.bonus_credits,
-    referralCode: salon.referral_code,
-    onboardedAt: salon.onboarded_at,
-    suspendedAt: salon.suspended_at,
-    suspendedReason: salon.suspended_reason,
-    hasBillingAccount: Boolean(salon.stripe_customer_id),
-    createdAt: salon.created_at,
+    id: shop.id,
+    name: shop.name,
+    shopType: shop.shop_type,
+    phone: shop.phone,
+    address: shop.address,
+    city: shop.city,
+    state: shop.state,
+    upiVpa: shop.upi_vpa,
+    upiName: shop.upi_name,
+    gstEnabled: Boolean(shop.gst_enabled),
+    gstin: shop.gstin,
+    gstRate: shop.gst_rate,
+    gstInclusive: Boolean(shop.gst_inclusive),
+    billPrefix: shop.bill_prefix,
+    billFooter: shop.bill_footer,
+    staffCanDiscount: Boolean(shop.staff_can_discount),
+    staffMaxDiscount: shop.staff_max_discount,
+    staffSeePhone: Boolean(shop.staff_see_phone),
+    winbackDays: shop.winback_days,
+    planId: shop.plan_id,
+    planExpiresAt: shop.plan_expires_at,
+    trial: Boolean(shop.trial),
+    onboardedAt: shop.onboarded_at,
+    suspendedAt: shop.suspended_at,
+    suspendedReason: shop.suspended_reason,
+    createdAt: shop.created_at,
   };
 }
 
-export function serializeMember(member: MemberRow & { email?: string | null }) {
+export function serializeStaff(s: StaffRow & { phone?: string }) {
   return {
-    id: member.id,
-    displayName: member.display_name,
-    role: member.role,
-    hasPin: Boolean(member.pin_hash),
-    hasLogin: Boolean(member.user_id),
-    email: member.email ?? null,
-    active: Boolean(member.active),
-    createdAt: member.created_at,
+    id: s.id,
+    name: s.name,
+    phone: s.phone ?? null,
+    role: s.role,
+    commissionPct: s.commission_pct,
+    productCommissionPct: s.product_commission_pct,
+    monthlySalary: s.monthly_salary,
+    color: s.color,
+    active: Boolean(s.active),
+    createdAt: s.created_at,
   };
 }
 
-export function serializeClient(client: ClientRow) {
+export function serializeCustomer(c: CustomerRow, hidePhone = false) {
   return {
-    id: client.id,
-    name: client.name,
-    phone: client.phone,
-    email: client.email,
-    notes: client.notes,
-    hairProfile: parseJson<Record<string, string>>(client.hair_profile, {}),
-    cadenceDays: client.cadence_days,
-    photoConsent: Boolean(client.photo_consent_at),
-    marketingConsent: Boolean(client.marketing_consent_at),
-    optedOut: Boolean(client.opted_out_at),
-    hasPassport: Boolean(client.passport_id),
-    visitCount: client.visit_count,
-    totalSpend: client.total_spend,
-    lastVisitAt: client.last_visit_at,
-    nextReminderAt: client.next_reminder_at,
-    lastRemindedAt: client.last_reminded_at,
-    createdAt: client.created_at,
+    id: c.id,
+    name: c.name,
+    phone: hidePhone && c.phone ? `••••••${c.phone.slice(-4)}` : c.phone,
+    gender: c.gender,
+    birthday: c.birthday,
+    notes: c.notes,
+    balance: c.balance,
+    visitCount: c.visit_count,
+    totalSpend: c.total_spend,
+    lastVisitAt: c.last_visit_at,
+    createdAt: c.created_at,
   };
 }
 
-export function serializePhoto(photo: PhotoRow) {
-  return { id: photo.id, angle: photo.angle, blurred: Boolean(photo.blurred), url: `/api/media/${photo.id}` };
-}
-
-export function serializeVisit(visit: VisitRow & { stylist_name?: string | null; salon_name?: string | null }, photos: PhotoRow[]) {
+export function serializeBill(b: BillRow & { staff_name?: string | null }, items: BillItemRow[] = [], hidePhone = false) {
   return {
-    id: visit.id,
-    clientId: visit.client_id,
-    memberId: visit.member_id,
-    stylistName: visit.stylist_name ?? null,
-    salonName: visit.salon_name ?? null,
-    service: visit.service,
-    styleTags: parseJson<string[]>(visit.style_tags, []),
-    technique: parseJson<Record<string, string>>(visit.technique, {}),
-    notes: visit.notes,
-    products: visit.products,
-    durationMinutes: visit.duration_minutes,
-    price: visit.price,
-    repeatOfVisitId: visit.repeat_of_visit_id,
-    recovered: Boolean(visit.recovered_by_message_id),
-    photos: photos.filter((p) => p.visit_id === visit.id).map(serializePhoto),
-    createdAt: visit.created_at,
+    id: b.id,
+    billNo: b.bill_no,
+    clientRef: b.client_ref,
+    token: b.public_token,
+    customerId: b.customer_id,
+    customerName: b.customer_name,
+    customerPhone: hidePhone && b.customer_phone ? `••••••${b.customer_phone.slice(-4)}` : b.customer_phone,
+    staffId: b.staff_id,
+    staffName: b.staff_name ?? null,
+    subtotal: b.subtotal,
+    discount: b.discount,
+    tax: b.tax,
+    total: b.total,
+    paidCash: b.paid_cash,
+    paidUpi: b.paid_upi,
+    paidCard: b.paid_card,
+    paidAdvance: b.paid_advance,
+    due: b.due,
+    note: b.note,
+    day: b.day,
+    createdAt: b.created_at,
+    voided: Boolean(b.voided_at),
+    voidReason: b.void_reason,
+    items: items
+      .filter((i) => i.bill_id === b.id)
+      .map((i) => ({ id: i.id, kind: i.kind, refId: i.ref_id, name: i.name, qty: i.qty, unitPrice: i.unit_price, amount: i.amount, staffId: i.staff_id, commission: i.commission })),
   };
 }

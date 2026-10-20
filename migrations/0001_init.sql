@@ -1,296 +1,349 @@
--- SnipMemory core schema (Cloudflare D1 / SQLite)
--- Conventions: ids are prefixed random strings, timestamps are unix epoch milliseconds,
--- money is stored in minor units (cents / paise) next to an ISO-4217 currency code.
+-- SnipMemory v3 — POS + ERP for Indian salons and barbershops (Cloudflare D1 / SQLite)
+-- Conventions: ids are prefixed random strings; timestamps are unix epoch ms;
+-- money is integer paise; `day` columns are the shop's local business date (YYYY-MM-DD).
 
 -- ---------------------------------------------------------------------------
--- Plans & pricing
+-- Platform plans (what shops pay SnipMemory). Prices in paise, INR.
 -- ---------------------------------------------------------------------------
 CREATE TABLE plans (
-  id                      TEXT PRIMARY KEY,
-  name                    TEXT NOT NULL,
-  tagline                 TEXT NOT NULL DEFAULT '',
-  max_staff               INTEGER NOT NULL,          -- -1 = unlimited
-  max_clients             INTEGER NOT NULL,          -- -1 = unlimited
-  monthly_message_credits INTEGER NOT NULL DEFAULT 0,
-  features                TEXT NOT NULL DEFAULT '[]', -- JSON array of marketing bullets
-  capabilities            TEXT NOT NULL DEFAULT '[]', -- JSON array of feature flags (see worker/src/lib/plans.ts)
-  is_public               INTEGER NOT NULL DEFAULT 1,
-  sort_order              INTEGER NOT NULL DEFAULT 0,
-  created_at              INTEGER NOT NULL,
-  updated_at              INTEGER NOT NULL
-);
-
-CREATE TABLE plan_prices (
-  plan_id         TEXT NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
-  currency        TEXT NOT NULL,                     -- USD, INR, GBP, AED, EUR ...
-  interval        TEXT NOT NULL CHECK (interval IN ('month', 'year')),
-  amount          INTEGER NOT NULL,                  -- minor units
-  stripe_price_id TEXT,                              -- optional; inline price_data is used when NULL
-  PRIMARY KEY (plan_id, currency, interval)
+  id                 TEXT PRIMARY KEY,
+  name               TEXT NOT NULL,
+  tagline            TEXT NOT NULL DEFAULT '',
+  max_staff          INTEGER NOT NULL,          -- people who can bill, including the owner; -1 = unlimited
+  monthly_bill_limit INTEGER NOT NULL,          -- -1 = unlimited
+  price_month        INTEGER NOT NULL,
+  price_year         INTEGER NOT NULL,
+  features           TEXT NOT NULL DEFAULT '[]', -- marketing bullets
+  capabilities       TEXT NOT NULL DEFAULT '[]', -- feature flags, see worker/src/lib/plans.ts
+  is_public          INTEGER NOT NULL DEFAULT 1,
+  sort_order         INTEGER NOT NULL DEFAULT 0,
+  updated_at         INTEGER NOT NULL DEFAULT 0
 );
 
 -- ---------------------------------------------------------------------------
--- Identity
+-- People & shops
 -- ---------------------------------------------------------------------------
 CREATE TABLE users (
   id                TEXT PRIMARY KEY,
-  email             TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  phone             TEXT NOT NULL UNIQUE,        -- E.164, the login id
   name              TEXT NOT NULL,
-  phone             TEXT,
-  password_hash     TEXT NOT NULL,
+  pin_hash          TEXT NOT NULL,
+  pin_must_change   INTEGER NOT NULL DEFAULT 0,  -- set when owner/support resets a PIN
+  password_hash     TEXT,                        -- only platform admins
   is_platform_admin INTEGER NOT NULL DEFAULT 0,
+  language          TEXT NOT NULL DEFAULT 'en',
   disabled_at       INTEGER,
   created_at        INTEGER NOT NULL,
   last_login_at     INTEGER
 );
 
-CREATE TABLE salons (
+CREATE TABLE shops (
+  id                    TEXT PRIMARY KEY,
+  owner_user_id         TEXT NOT NULL REFERENCES users(id),
+  name                  TEXT NOT NULL,
+  shop_type             TEXT NOT NULL DEFAULT 'gents' CHECK (shop_type IN ('gents', 'unisex', 'ladies', 'spa')),
+  phone                 TEXT,
+  address               TEXT,
+  city                  TEXT,
+  state                 TEXT,
+  timezone              TEXT NOT NULL DEFAULT 'Asia/Kolkata',
+  upi_vpa               TEXT,                    -- e.g. ramesh@okaxis, shown as QR on every bill
+  upi_name              TEXT,
+  gst_enabled           INTEGER NOT NULL DEFAULT 0,
+  gstin                 TEXT,
+  gst_rate              INTEGER NOT NULL DEFAULT 18,
+  gst_inclusive         INTEGER NOT NULL DEFAULT 1,
+  bill_prefix           TEXT NOT NULL DEFAULT '',
+  next_bill_no          INTEGER NOT NULL DEFAULT 1,
+  bill_footer           TEXT,
+  staff_can_discount    INTEGER NOT NULL DEFAULT 1,
+  staff_max_discount    INTEGER NOT NULL DEFAULT 20, -- percent
+  staff_see_phone       INTEGER NOT NULL DEFAULT 1,
+  winback_days          INTEGER NOT NULL DEFAULT 30,
+  plan_id               TEXT NOT NULL REFERENCES plans(id),
+  plan_expires_at       INTEGER,                 -- NULL for free
+  trial                 INTEGER NOT NULL DEFAULT 0,
+  onboarded_at          INTEGER,
+  suspended_at          INTEGER,
+  suspended_reason      TEXT,
+  created_at            INTEGER NOT NULL,
+  updated_at            INTEGER NOT NULL,
+  deleted_at            INTEGER
+);
+CREATE INDEX idx_shops_owner ON shops(owner_user_id);
+
+-- Everyone who works in a shop, including the owner. Staff log in with their own phone + PIN.
+CREATE TABLE staff (
   id                     TEXT PRIMARY KEY,
-  slug                   TEXT NOT NULL UNIQUE,
+  shop_id                TEXT NOT NULL REFERENCES shops(id),
+  user_id                TEXT NOT NULL REFERENCES users(id),
   name                   TEXT NOT NULL,
-  phone                  TEXT,
-  email                  TEXT,
-  address                TEXT,
-  city                   TEXT,
-  country                TEXT NOT NULL DEFAULT 'US',   -- ISO-3166 alpha-2, drives phone parsing
-  timezone               TEXT NOT NULL DEFAULT 'UTC',
-  currency               TEXT NOT NULL DEFAULT 'USD',
-  brand_color            TEXT NOT NULL DEFAULT '#4f46e5',
-  booking_url            TEXT,
-  default_cadence_days   INTEGER NOT NULL DEFAULT 28,
-  reminders_enabled      INTEGER NOT NULL DEFAULT 1,
-  reminder_channel       TEXT NOT NULL DEFAULT 'whatsapp' CHECK (reminder_channel IN ('whatsapp', 'sms')),
-  reminder_template      TEXT,
-  send_window_start      INTEGER NOT NULL DEFAULT 10,  -- local hour, inclusive
-  send_window_end        INTEGER NOT NULL DEFAULT 19,  -- local hour, exclusive
-  plan_id                TEXT NOT NULL REFERENCES plans(id),
-  billing_interval       TEXT NOT NULL DEFAULT 'month' CHECK (billing_interval IN ('month', 'year')),
-  subscription_status    TEXT NOT NULL DEFAULT 'trialing'
-                           CHECK (subscription_status IN ('trialing', 'active', 'past_due', 'canceled')),
-  trial_ends_at          INTEGER,
-  current_period_end     INTEGER,
-  past_due_since         INTEGER,
-  stripe_customer_id     TEXT,
-  stripe_subscription_id TEXT,
-  message_credits        INTEGER NOT NULL DEFAULT 0,   -- monthly allowance, reset each billing period
-  bonus_credits          INTEGER NOT NULL DEFAULT 0,   -- purchased packs, never expire
-  credits_reset_at       INTEGER,
-  referral_code          TEXT UNIQUE,
-  referred_by_salon_id   TEXT,
-  onboarded_at           INTEGER,
-  suspended_at           INTEGER,
-  suspended_reason       TEXT,
+  role                   TEXT NOT NULL CHECK (role IN ('owner', 'manager', 'staff')),
+  commission_pct         INTEGER NOT NULL DEFAULT 0,   -- on services
+  product_commission_pct INTEGER NOT NULL DEFAULT 0,   -- on products sold
+  monthly_salary         INTEGER NOT NULL DEFAULT 0,   -- paise
+  color                  TEXT NOT NULL DEFAULT '#0f766e',
+  active                 INTEGER NOT NULL DEFAULT 1,
   created_at             INTEGER NOT NULL,
-  updated_at             INTEGER NOT NULL,
-  deleted_at             INTEGER
+  UNIQUE (shop_id, user_id)
 );
-CREATE INDEX idx_salons_status ON salons(subscription_status);
-CREATE INDEX idx_salons_stripe_customer ON salons(stripe_customer_id);
+CREATE INDEX idx_staff_user ON staff(user_id);
 
--- A member is a person who works at a salon. Stylists do not need an email login:
--- they unlock a shared "station" device with their PIN.
-CREATE TABLE members (
-  id           TEXT PRIMARY KEY,
-  salon_id     TEXT NOT NULL REFERENCES salons(id),
-  user_id      TEXT REFERENCES users(id),
-  display_name TEXT NOT NULL,
-  role         TEXT NOT NULL CHECK (role IN ('owner', 'manager', 'stylist')),
-  pin_hash     TEXT,
-  active       INTEGER NOT NULL DEFAULT 1,
-  created_at   INTEGER NOT NULL,
-  UNIQUE (salon_id, user_id)
-);
-CREATE INDEX idx_members_salon ON members(salon_id);
-CREATE INDEX idx_members_user ON members(user_id);
-
-CREATE TABLE invites (
-  id          TEXT PRIMARY KEY,
-  salon_id    TEXT NOT NULL REFERENCES salons(id),
-  member_id   TEXT REFERENCES members(id),
-  email       TEXT NOT NULL COLLATE NOCASE,
-  role        TEXT NOT NULL CHECK (role IN ('manager', 'stylist')),
-  token_hash  TEXT NOT NULL UNIQUE,
-  created_by  TEXT NOT NULL REFERENCES users(id),
-  expires_at  INTEGER NOT NULL,
-  accepted_at INTEGER,
-  created_at  INTEGER NOT NULL
-);
-
--- Sessions are opaque random tokens; only their SHA-256 hash is stored.
---   kind = user     → owner / manager / stylist / platform admin signed in with email+password
---   kind = station  → a shared salon device; stylists unlock it with a PIN (acting_member_id)
---   kind = client   → an end customer signed in to their Style Passport via phone OTP
 CREATE TABLE sessions (
-  id               TEXT PRIMARY KEY,
-  kind             TEXT NOT NULL CHECK (kind IN ('user', 'station', 'client')),
-  user_id          TEXT REFERENCES users(id),
-  salon_id         TEXT REFERENCES salons(id),
-  passport_id      TEXT,
-  impersonator_id  TEXT REFERENCES users(id),
-  acting_member_id TEXT REFERENCES members(id),
-  acting_until     INTEGER,
-  expires_at       INTEGER NOT NULL,
-  created_at       INTEGER NOT NULL,
-  last_seen_at     INTEGER NOT NULL,
-  ip               TEXT,
-  user_agent       TEXT
+  id           TEXT PRIMARY KEY,   -- sha256 of the cookie token
+  app          TEXT NOT NULL CHECK (app IN ('owner', 'staff', 'admin')),
+  user_id      TEXT NOT NULL REFERENCES users(id),
+  shop_id      TEXT,
+  impersonator_id TEXT,
+  expires_at   INTEGER NOT NULL,
+  created_at   INTEGER NOT NULL,
+  last_seen_at INTEGER NOT NULL,
+  user_agent   TEXT
 );
 CREATE INDEX idx_sessions_user ON sessions(user_id);
-CREATE INDEX idx_sessions_expires ON sessions(expires_at);
 
 -- ---------------------------------------------------------------------------
--- Clients, style passport and visits
+-- Catalogue
 -- ---------------------------------------------------------------------------
-
--- A passport is the platform-wide identity of an end customer, keyed by verified phone.
-CREATE TABLE passports (
-  id            TEXT PRIMARY KEY,
-  phone         TEXT NOT NULL UNIQUE,  -- E.164
-  name          TEXT,
-  verified_at   INTEGER,
-  last_login_at INTEGER,
-  created_at    INTEGER NOT NULL
+CREATE TABLE services (
+  id         TEXT PRIMARY KEY,
+  shop_id    TEXT NOT NULL REFERENCES shops(id),
+  name       TEXT NOT NULL,
+  category   TEXT NOT NULL DEFAULT 'Hair',
+  price      INTEGER NOT NULL,
+  minutes    INTEGER NOT NULL DEFAULT 20,
+  active     INTEGER NOT NULL DEFAULT 1,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
 );
+CREATE INDEX idx_services_shop ON services(shop_id, sort_order);
 
-CREATE TABLE clients (
-  id                   TEXT PRIMARY KEY,
-  salon_id             TEXT NOT NULL REFERENCES salons(id),
-  passport_id          TEXT REFERENCES passports(id),
-  name                 TEXT NOT NULL,
-  phone                TEXT NOT NULL,  -- E.164
-  email                TEXT,
-  notes                TEXT,
-  hair_profile         TEXT NOT NULL DEFAULT '{}', -- JSON: texture, density, growth, scalp, allergies
-  cadence_days         INTEGER,                    -- per-client override
-  photo_consent_at     INTEGER,
-  marketing_consent_at INTEGER,
-  opted_out_at         INTEGER,
-  unsubscribe_token    TEXT NOT NULL UNIQUE,
-  visit_count          INTEGER NOT NULL DEFAULT 0,
-  total_spend          INTEGER NOT NULL DEFAULT 0,
-  last_visit_at        INTEGER,
-  next_reminder_at     INTEGER,
-  last_reminded_at     INTEGER,
-  created_at           INTEGER NOT NULL,
-  updated_at           INTEGER NOT NULL,
-  deleted_at           INTEGER
-);
-CREATE UNIQUE INDEX idx_clients_salon_phone ON clients(salon_id, phone) WHERE deleted_at IS NULL;
-CREATE INDEX idx_clients_salon_name ON clients(salon_id, name);
-CREATE INDEX idx_clients_passport ON clients(passport_id);
-CREATE INDEX idx_clients_reminder_due ON clients(next_reminder_at) WHERE next_reminder_at IS NOT NULL AND deleted_at IS NULL;
-
-CREATE TABLE visits (
-  id                      TEXT PRIMARY KEY,
-  salon_id                TEXT NOT NULL REFERENCES salons(id),
-  client_id               TEXT NOT NULL REFERENCES clients(id),
-  member_id               TEXT REFERENCES members(id),
-  service                 TEXT NOT NULL DEFAULT 'Haircut',
-  style_tags              TEXT NOT NULL DEFAULT '[]', -- JSON array
-  technique               TEXT NOT NULL DEFAULT '{}', -- JSON: top, sides, back, neckline, beard, guards...
-  notes                   TEXT,
-  products                TEXT,
-  duration_minutes        INTEGER,
-  price                   INTEGER,                    -- minor units, salon currency
-  repeat_of_visit_id      TEXT REFERENCES visits(id),
-  recovered_by_message_id TEXT,                       -- reminder that brought the client back
-  created_at              INTEGER NOT NULL,
-  deleted_at              INTEGER
-);
-CREATE INDEX idx_visits_client ON visits(client_id, created_at);
-CREATE INDEX idx_visits_salon_date ON visits(salon_id, created_at);
-
-CREATE TABLE photos (
-  id           TEXT PRIMARY KEY,
-  salon_id     TEXT NOT NULL REFERENCES salons(id),
-  visit_id     TEXT NOT NULL REFERENCES visits(id),
-  angle        TEXT NOT NULL CHECK (angle IN ('front', 'left', 'right', 'back', 'detail')),
-  r2_key       TEXT NOT NULL UNIQUE,
-  content_type TEXT NOT NULL,
-  bytes        INTEGER NOT NULL,
-  blurred      INTEGER NOT NULL DEFAULT 0,
-  created_at   INTEGER NOT NULL
-);
-CREATE INDEX idx_photos_visit ON photos(visit_id);
-CREATE INDEX idx_photos_salon ON photos(salon_id);
-
--- A client lets a salon read their history from other salons (granted by OTP).
-CREATE TABLE passport_shares (
-  passport_id TEXT NOT NULL REFERENCES passports(id),
-  salon_id    TEXT NOT NULL REFERENCES salons(id),
-  granted_at  INTEGER NOT NULL,
-  revoked_at  INTEGER,
-  PRIMARY KEY (passport_id, salon_id)
-);
-
-CREATE TABLE otp_codes (
+CREATE TABLE products (
   id          TEXT PRIMARY KEY,
-  phone       TEXT NOT NULL,
-  purpose     TEXT NOT NULL CHECK (purpose IN ('passport_login', 'passport_share')),
-  salon_id    TEXT,
-  code_hash   TEXT NOT NULL,
-  attempts    INTEGER NOT NULL DEFAULT 0,
-  expires_at  INTEGER NOT NULL,
-  consumed_at INTEGER,
+  shop_id     TEXT NOT NULL REFERENCES shops(id),
+  name        TEXT NOT NULL,
+  price       INTEGER NOT NULL,          -- selling price
+  cost        INTEGER NOT NULL DEFAULT 0,
+  stock       INTEGER NOT NULL DEFAULT 0,
+  low_stock   INTEGER NOT NULL DEFAULT 2,
+  active      INTEGER NOT NULL DEFAULT 1,
   created_at  INTEGER NOT NULL
 );
-CREATE INDEX idx_otp_phone ON otp_codes(phone, purpose, created_at);
+CREATE INDEX idx_products_shop ON products(shop_id);
 
 -- ---------------------------------------------------------------------------
--- Messaging, billing, operations
+-- Customers & khata (udhaar / advance)
 -- ---------------------------------------------------------------------------
-CREATE TABLE messages (
-  id                  TEXT PRIMARY KEY,
-  salon_id            TEXT,
-  client_id           TEXT,
-  channel             TEXT NOT NULL CHECK (channel IN ('whatsapp', 'sms')),
-  kind                TEXT NOT NULL CHECK (kind IN ('reminder', 'otp', 'system')),
-  to_phone            TEXT NOT NULL,
-  body                TEXT NOT NULL,
-  status              TEXT NOT NULL CHECK (status IN ('sent', 'failed', 'skipped')),
-  provider            TEXT NOT NULL,
-  provider_message_id TEXT,
-  error               TEXT,
-  credits             INTEGER NOT NULL DEFAULT 0,
-  created_at          INTEGER NOT NULL
+CREATE TABLE customers (
+  id            TEXT PRIMARY KEY,
+  shop_id       TEXT NOT NULL REFERENCES shops(id),
+  name          TEXT NOT NULL,
+  phone         TEXT,                    -- E.164, optional (walk-ins)
+  gender        TEXT,
+  birthday      TEXT,                    -- MM-DD
+  notes         TEXT,
+  balance       INTEGER NOT NULL DEFAULT 0, -- >0 advance with shop, <0 udhaar owed to shop
+  visit_count   INTEGER NOT NULL DEFAULT 0,
+  total_spend   INTEGER NOT NULL DEFAULT 0,
+  last_visit_at INTEGER,
+  created_at    INTEGER NOT NULL,
+  updated_at    INTEGER NOT NULL,
+  deleted_at    INTEGER
 );
-CREATE INDEX idx_messages_salon ON messages(salon_id, created_at);
-CREATE INDEX idx_messages_client ON messages(client_id, created_at);
+CREATE UNIQUE INDEX idx_customers_shop_phone ON customers(shop_id, phone) WHERE phone IS NOT NULL AND deleted_at IS NULL;
+CREATE INDEX idx_customers_shop_name ON customers(shop_id, name);
 
-CREATE TABLE payments (
-  id           TEXT PRIMARY KEY,
-  salon_id     TEXT NOT NULL REFERENCES salons(id),
-  amount       INTEGER NOT NULL,
-  currency     TEXT NOT NULL,
-  status       TEXT NOT NULL CHECK (status IN ('paid', 'failed', 'refunded')),
-  description  TEXT NOT NULL,
-  provider     TEXT NOT NULL,          -- stripe | manual | dev
-  provider_ref TEXT UNIQUE,
-  invoice_url  TEXT,
-  created_at   INTEGER NOT NULL
+-- Every change to a customer's balance. balance = SUM(amount).
+CREATE TABLE ledger (
+  id          TEXT PRIMARY KEY,
+  shop_id     TEXT NOT NULL REFERENCES shops(id),
+  customer_id TEXT NOT NULL REFERENCES customers(id),
+  kind        TEXT NOT NULL CHECK (kind IN ('bill_due', 'bill_advance_used', 'due_paid', 'advance_added', 'adjust', 'void_reversal')),
+  amount      INTEGER NOT NULL,           -- signed
+  mode        TEXT CHECK (mode IN ('cash', 'upi', 'card')),
+  bill_id     TEXT,
+  staff_id    TEXT,
+  note        TEXT,
+  day         TEXT NOT NULL,
+  created_at  INTEGER NOT NULL
 );
-CREATE INDEX idx_payments_salon ON payments(salon_id, created_at);
+CREATE INDEX idx_ledger_customer ON ledger(customer_id, created_at);
+CREATE INDEX idx_ledger_shop_day ON ledger(shop_id, day);
 
-CREATE TABLE webhook_events (
-  id          TEXT PRIMARY KEY,         -- provider event id, for idempotency
-  provider    TEXT NOT NULL,
-  type        TEXT NOT NULL,
-  received_at INTEGER NOT NULL
+-- ---------------------------------------------------------------------------
+-- Bills (POS)
+-- ---------------------------------------------------------------------------
+CREATE TABLE bills (
+  id            TEXT PRIMARY KEY,
+  shop_id       TEXT NOT NULL REFERENCES shops(id),
+  bill_no       INTEGER NOT NULL,
+  client_ref    TEXT NOT NULL,            -- idempotency key from the device (offline sync)
+  public_token  TEXT NOT NULL UNIQUE,
+  customer_id   TEXT REFERENCES customers(id),
+  customer_name TEXT,
+  customer_phone TEXT,
+  staff_id      TEXT NOT NULL REFERENCES staff(id),  -- main stylist
+  created_by    TEXT NOT NULL REFERENCES staff(id),
+  subtotal      INTEGER NOT NULL,
+  discount      INTEGER NOT NULL DEFAULT 0,
+  tax           INTEGER NOT NULL DEFAULT 0,          -- GST portion (included in total)
+  total         INTEGER NOT NULL,
+  paid_cash     INTEGER NOT NULL DEFAULT 0,
+  paid_upi      INTEGER NOT NULL DEFAULT 0,
+  paid_card     INTEGER NOT NULL DEFAULT 0,
+  paid_advance  INTEGER NOT NULL DEFAULT 0,
+  due           INTEGER NOT NULL DEFAULT 0,
+  note          TEXT,
+  day           TEXT NOT NULL,
+  created_at    INTEGER NOT NULL,
+  voided_at     INTEGER,
+  void_reason   TEXT,
+  voided_by     TEXT,
+  UNIQUE (shop_id, client_ref),
+  UNIQUE (shop_id, bill_no)
 );
+CREATE INDEX idx_bills_shop_day ON bills(shop_id, day);
+CREATE INDEX idx_bills_staff_day ON bills(staff_id, day);
+CREATE INDEX idx_bills_customer ON bills(customer_id);
+
+CREATE TABLE bill_items (
+  id         TEXT PRIMARY KEY,
+  bill_id    TEXT NOT NULL REFERENCES bills(id),
+  shop_id    TEXT NOT NULL,
+  kind       TEXT NOT NULL CHECK (kind IN ('service', 'product', 'custom')),
+  ref_id     TEXT,
+  name       TEXT NOT NULL,
+  qty        INTEGER NOT NULL DEFAULT 1,
+  unit_price INTEGER NOT NULL,
+  amount     INTEGER NOT NULL,            -- qty * unit_price
+  net        INTEGER NOT NULL,            -- after share of bill discount (incl. GST)
+  staff_id   TEXT NOT NULL REFERENCES staff(id),
+  commission INTEGER NOT NULL DEFAULT 0,
+  cost       INTEGER NOT NULL DEFAULT 0   -- product cost, for profit
+);
+CREATE INDEX idx_items_bill ON bill_items(bill_id);
+CREATE INDEX idx_items_staff ON bill_items(staff_id);
+
+-- ---------------------------------------------------------------------------
+-- Money out, staff, operations
+-- ---------------------------------------------------------------------------
+CREATE TABLE expenses (
+  id         TEXT PRIMARY KEY,
+  shop_id    TEXT NOT NULL REFERENCES shops(id),
+  category   TEXT NOT NULL,
+  amount     INTEGER NOT NULL,
+  mode       TEXT NOT NULL CHECK (mode IN ('cash', 'upi', 'card')),
+  note       TEXT,
+  day        TEXT NOT NULL,
+  created_by TEXT,
+  created_at INTEGER NOT NULL,
+  deleted_at INTEGER
+);
+CREATE INDEX idx_expenses_shop_day ON expenses(shop_id, day);
+
+-- Salary advances, payouts, bonuses, deductions for staff.
+CREATE TABLE staff_txns (
+  id         TEXT PRIMARY KEY,
+  shop_id    TEXT NOT NULL REFERENCES shops(id),
+  staff_id   TEXT NOT NULL REFERENCES staff(id),
+  kind       TEXT NOT NULL CHECK (kind IN ('advance', 'payout', 'bonus', 'deduction')),
+  amount     INTEGER NOT NULL,
+  mode       TEXT NOT NULL DEFAULT 'cash' CHECK (mode IN ('cash', 'upi', 'card')),
+  note       TEXT,
+  day        TEXT NOT NULL,
+  created_by TEXT,
+  created_at INTEGER NOT NULL,
+  deleted_at INTEGER
+);
+CREATE INDEX idx_staff_txns ON staff_txns(staff_id, day);
+
+CREATE TABLE attendance (
+  shop_id  TEXT NOT NULL,
+  staff_id TEXT NOT NULL REFERENCES staff(id),
+  day      TEXT NOT NULL,
+  in_at    INTEGER NOT NULL,
+  out_at   INTEGER,
+  PRIMARY KEY (staff_id, day)
+);
+CREATE INDEX idx_attendance_shop ON attendance(shop_id, day);
+
+-- Walk-in tokens and simple appointments.
+CREATE TABLE queue (
+  id            TEXT PRIMARY KEY,
+  shop_id       TEXT NOT NULL REFERENCES shops(id),
+  token         INTEGER NOT NULL,
+  day           TEXT NOT NULL,
+  customer_id   TEXT,
+  name          TEXT NOT NULL,
+  phone         TEXT,
+  staff_id      TEXT,                     -- preferred / assigned stylist
+  note          TEXT,
+  scheduled_at  INTEGER,                  -- set for appointments
+  status        TEXT NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting', 'serving', 'done', 'cancelled')),
+  bill_id       TEXT,
+  created_at    INTEGER NOT NULL,
+  started_at    INTEGER,
+  done_at       INTEGER
+);
+CREATE INDEX idx_queue_shop_day ON queue(shop_id, day, status);
+
+-- End-of-day cash count (galla).
+CREATE TABLE closings (
+  shop_id       TEXT NOT NULL,
+  day           TEXT NOT NULL,
+  opening_cash  INTEGER NOT NULL,
+  expected_cash INTEGER NOT NULL,
+  counted_cash  INTEGER NOT NULL,
+  note          TEXT,
+  closed_by     TEXT,
+  created_at    INTEGER NOT NULL,
+  PRIMARY KEY (shop_id, day)
+);
+
+-- Style photos of a customer's cut (stored privately in R2).
+CREATE TABLE photos (
+  id          TEXT PRIMARY KEY,
+  shop_id     TEXT NOT NULL REFERENCES shops(id),
+  customer_id TEXT NOT NULL REFERENCES customers(id),
+  bill_id     TEXT,
+  r2_key      TEXT NOT NULL UNIQUE,
+  bytes       INTEGER NOT NULL,
+  note        TEXT,
+  created_at  INTEGER NOT NULL
+);
+CREATE INDEX idx_photos_customer ON photos(customer_id);
+
+-- ---------------------------------------------------------------------------
+-- SnipMemory subscriptions: shops pay by UPI and submit the UTR; an admin verifies.
+-- ---------------------------------------------------------------------------
+CREATE TABLE subscription_payments (
+  id          TEXT PRIMARY KEY,
+  shop_id     TEXT NOT NULL REFERENCES shops(id),
+  plan_id     TEXT NOT NULL REFERENCES plans(id),
+  period      TEXT NOT NULL CHECK (period IN ('month', 'year')),
+  amount      INTEGER NOT NULL,
+  utr         TEXT NOT NULL,
+  status      TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  note        TEXT,
+  created_by  TEXT,
+  reviewed_by TEXT,
+  reviewed_at INTEGER,
+  created_at  INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX idx_subpay_utr ON subscription_payments(utr) WHERE status != 'rejected';
+CREATE INDEX idx_subpay_status ON subscription_payments(status, created_at);
 
 CREATE TABLE audit_log (
-  id              TEXT PRIMARY KEY,
-  salon_id        TEXT,
-  actor_user_id   TEXT,
+  id         TEXT PRIMARY KEY,
+  shop_id    TEXT,
+  user_id    TEXT,
   impersonator_id TEXT,
-  action          TEXT NOT NULL,
-  target_type     TEXT,
-  target_id       TEXT,
-  meta            TEXT NOT NULL DEFAULT '{}',
-  ip              TEXT,
-  created_at      INTEGER NOT NULL
+  action     TEXT NOT NULL,
+  target_id  TEXT,
+  meta       TEXT NOT NULL DEFAULT '{}',
+  created_at INTEGER NOT NULL
 );
-CREATE INDEX idx_audit_salon ON audit_log(salon_id, created_at);
+CREATE INDEX idx_audit_shop ON audit_log(shop_id, created_at);
 CREATE INDEX idx_audit_created ON audit_log(created_at);
 
 CREATE TABLE announcements (
@@ -309,35 +362,18 @@ CREATE TABLE rate_limits (
 );
 
 -- ---------------------------------------------------------------------------
--- Default plans (see docs/BUSINESS_PLAN.md for the reasoning behind tiers & prices)
+-- Plans (see docs/BUSINESS_PLAN.md §6)
 -- ---------------------------------------------------------------------------
-INSERT INTO plans (id, name, tagline, max_staff, max_clients, monthly_message_credits, features, capabilities, sort_order, created_at, updated_at) VALUES
- ('free', 'Free', 'For a single chair getting started', 1, 75, 0,
-  '["1 stylist","Up to 75 clients","4-angle cut photos & notes","Manual WhatsApp reminders (click-to-send)","Client Style Passport"]',
-  '[]', 0, 0, 0),
- ('solo', 'Solo', 'For the independent barber or stylist', 1, -1, 100,
-  '["1 stylist","Unlimited clients & photos","100 automated reminders / month","Smart return-cycle reminders","Repeat-last-cut in one tap","Revenue recovered report"]',
-  '["automated_reminders","analytics"]', 1, 0, 0),
- ('studio', 'Studio', 'For shops with a team on the floor', 6, -1, 400,
-  '["Up to 6 stylists","Shared station mode with stylist PINs","400 automated reminders / month","Passport import from other salons","Team & stylist performance analytics","CSV export"]',
-  '["automated_reminders","analytics","station_mode","passport_import","export"]', 2, 0, 0),
- ('chain', 'Multi-location', 'For growing brands and franchises (price per location)', -1, -1, 1000,
-  '["Unlimited stylists","1,000 automated reminders / month","Everything in Studio","Custom brand colour on client messages","Priority WhatsApp support","Onboarding & data migration"]',
-  '["automated_reminders","analytics","station_mode","passport_import","export","branding","priority_support"]', 3, 0, 0);
-
-INSERT INTO plan_prices (plan_id, currency, interval, amount) VALUES
- ('solo',   'USD', 'month',   1200), ('solo',   'USD', 'year',  12000),
- ('studio', 'USD', 'month',   3900), ('studio', 'USD', 'year',  39000),
- ('chain',  'USD', 'month',   7900), ('chain',  'USD', 'year',  79000),
- ('solo',   'INR', 'month',  29900), ('solo',   'INR', 'year', 299000),
- ('studio', 'INR', 'month',  89900), ('studio', 'INR', 'year', 899000),
- ('chain',  'INR', 'month', 199900), ('chain',  'INR', 'year',1999000),
- ('solo',   'GBP', 'month',   1000), ('solo',   'GBP', 'year',  10000),
- ('studio', 'GBP', 'month',   3200), ('studio', 'GBP', 'year',  32000),
- ('chain',  'GBP', 'month',   6500), ('chain',  'GBP', 'year',  65000),
- ('solo',   'AED', 'month',   4500), ('solo',   'AED', 'year',  45000),
- ('studio', 'AED', 'month',  14500), ('studio', 'AED', 'year', 145000),
- ('chain',  'AED', 'month',  29000), ('chain',  'AED', 'year', 290000),
- ('solo',   'EUR', 'month',   1100), ('solo',   'EUR', 'year',  11000),
- ('studio', 'EUR', 'month',   3500), ('studio', 'EUR', 'year',  35000),
- ('chain',  'EUR', 'month',   7200), ('chain',  'EUR', 'year',  72000);
+INSERT INTO plans (id, name, tagline, max_staff, monthly_bill_limit, price_month, price_year, features, capabilities, sort_order) VALUES
+ ('free', 'Free', 'For a one-chair shop', 2, 300, 0, 0,
+  '["Owner + 1 barber","300 bills a month","UPI QR billing & WhatsApp bills","Customers & udhaar (khata)","Expenses & today''s report"]',
+  '[]', 0),
+ ('starter', 'Starter', 'For a small shop', 4, -1, 14900, 149000,
+  '["Up to 4 people","Unlimited bills","Barber-wise commission & salary","Reports for any date","Daily cash closing (galla)","Walk-in token queue"]',
+  '["reports","commission","closing","queue"]', 1),
+ ('pro', 'Pro', 'For a busy salon', 10, -1, 34900, 349000,
+  '["Up to 10 people","Everything in Starter","Product stock & low-stock alerts","GST bills","Attendance","Customer cut photos","Excel/CSV export"]',
+  '["reports","commission","closing","queue","inventory","gst","attendance","photos","export"]', 2),
+ ('business', 'Business', 'For big salons & branches (per shop)', -1, -1, 69900, 699000,
+  '["Unlimited staff","Everything in Pro","All branches in one dashboard","Priority WhatsApp support","Help moving your old data"]',
+  '["reports","commission","closing","queue","inventory","gst","attendance","photos","export","multi_shop","priority_support"]', 3);
