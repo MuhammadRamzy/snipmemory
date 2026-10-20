@@ -44,3 +44,9 @@ next-env.d.ts
 .vite/
 src-vite-backup/
 .tempmediaStorage/
+
+# cloudflare / vite
+/dist
+.wrangler/
+.dev.vars*
+!.dev.vars.example

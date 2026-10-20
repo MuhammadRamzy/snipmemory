@@ -1,0 +1,40 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "snipmemory",
+  "main": "worker/src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // The React app (web/) is built by Vite and served as static assets.
+  // API routes always hit the Worker first; every other path falls back to the SPA.
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/u/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "snipmemory",
+      // Create with: npx wrangler d1 create snipmemory  — then paste the id here.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    // Create with: npx wrangler r2 bucket create snipmemory-media
+    { "binding": "MEDIA", "bucket_name": "snipmemory-media" }
+  ],
+  // Reminder dispatcher, trial expiry, credit resets, session cleanup.
+  "triggers": { "crons": ["*/15 * * * *"] },
+  "vars": {
+    "APP_ENV": "development",
+    "APP_URL": "http://localhost:5173",
+    "MESSAGING_PROVIDER": "log",
+    "OTP_CHANNEL": "sms",
+    "PLATFORM_ADMIN_EMAILS": "admin@snipmemory.app"
+  },
+  // Secrets (set with `npx wrangler secret put NAME`):
+  //   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+  //   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM
+  //   WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_REMINDER_TEMPLATE, WHATSAPP_OTP_TEMPLATE
+  "observability": { "enabled": true }
+}
