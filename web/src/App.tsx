@@ -10,6 +10,8 @@ const SalonPage = lazy(() => import('./pages/marketing/SalonPage'));
 const Login = lazy(() => import('./pages/auth/Login'));
 const Signup = lazy(() => import('./pages/auth/Signup'));
 const Invite = lazy(() => import('./pages/auth/Invite'));
+const Forgot = lazy(() => import('./pages/auth/Forgot'));
+const Reset = lazy(() => import('./pages/auth/Reset'));
 const Passport = lazy(() => import('./pages/passport/Passport'));
 const Station = lazy(() => import('./pages/station/Station'));
 const AppShell = lazy(() => import('./components/AppShell'));
@@ -57,6 +59,8 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/invite/:token" element={<Invite />} />
+          <Route path="/forgot" element={<Forgot />} />
+          <Route path="/reset/:token" element={<Reset />} />
           <Route path="/passport" element={<Passport />} />
           <Route path="/station" element={<Station />} />
           <Route path="/app" element={<AppShell />}>

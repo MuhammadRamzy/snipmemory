@@ -144,3 +144,24 @@ describe('team & station mode', () => {
     expect((await manager.get(`/api/salons/${salonId}/billing`)).status).toBe(403);
   });
 });
+
+describe('password reset', () => {
+  it('resets a password with a single-use link and signs out other sessions', async () => {
+    const { browser, me } = await signup();
+    const anon = new Browser();
+    const unknown = await anon.post('/api/auth/password/forgot', { email: 'nobody@example.com' });
+    expect(unknown.status).toBe(200);
+    expect(unknown.data.devLink).toBeUndefined();
+
+    const res = await anon.post('/api/auth/password/forgot', { email: me.user.email });
+    const token = res.data.devLink.split('/reset/')[1];
+    expect((await anon.post('/api/auth/password/reset', { token, password: 'short' })).status).toBe(422);
+    const ok = await anon.post('/api/auth/password/reset', { token, password: 'a brand new password' });
+    expect(ok.status).toBe(200);
+    expect(ok.data.user.email).toBe(me.user.email);
+    // Old session is gone, the link can't be reused, the new password works.
+    expect((await browser.get('/api/auth/me')).data.user).toBeNull();
+    expect((await anon.post('/api/auth/password/reset', { token, password: 'another new password' })).status).toBe(400);
+    expect((await new Browser().post('/api/auth/login', { email: me.user.email, password: 'a brand new password' })).status).toBe(200);
+  });
+});

@@ -7,9 +7,15 @@ export interface Env {
   /** `log` (development: messages are only recorded) or `live` (WhatsApp Cloud API with Twilio SMS fallback) */
   MESSAGING_PROVIDER: string;
   OTP_CHANNEL: 'sms' | 'whatsapp';
-  /** Comma separated. Users signing up with these emails become platform admins. */
+  /**
+   * Comma separated. Outside production, users signing up with these emails become platform admins.
+   * In production grant admin with SQL instead (see README) — there is no email verification at signup.
+   */
   PLATFORM_ADMIN_EMAILS?: string;
 
+  RESEND_API_KEY?: string;
+  /** e.g. "SnipMemory <hello@snipmemory.app>" — must be a domain verified in Resend. */
+  EMAIL_FROM?: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
   TWILIO_ACCOUNT_SID?: string;

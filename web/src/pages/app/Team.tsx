@@ -55,14 +55,16 @@ function Invite({ member, onDone }: { member?: Member; onDone: () => void }) {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'stylist' | 'manager'>(member?.role === 'manager' ? 'manager' : 'stylist');
   const [link, setLink] = useState<string | null>(null);
+  const [emailed, setEmailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
-      const res = await api.post<{ inviteUrl: string }>(`${base}/team/invites`, { email, role, memberId: member?.id });
+      const res = await api.post<{ inviteUrl: string; emailed: boolean }>(`${base}/team/invites`, { email, role, memberId: member?.id });
       setLink(res.inviteUrl);
+      setEmailed(res.emailed);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -72,7 +74,9 @@ function Invite({ member, onDone }: { member?: Member; onDone: () => void }) {
   if (link) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-muted">Send this link to {email}. It works once and expires in 7 days.</p>
+        <p className="text-sm text-muted">
+          {emailed ? `We've emailed ${email}. You can also share the link directly` : `Send this link to ${email}`} — it works once and expires in 7 days.
+        </p>
         <Input readOnly value={link} onFocus={(e) => e.currentTarget.select()} />
         <div className="flex gap-2">
           <Button className="flex-1" variant="secondary" onClick={() => navigator.clipboard?.writeText(link)}>

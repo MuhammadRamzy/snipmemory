@@ -1,0 +1,13 @@
+# Copy to .dev.vars to override vars / provide secrets locally (never commit .dev.vars).
+# Leave everything empty to run fully offline: messages are logged, billing runs in test mode.
+# STRIPE_SECRET_KEY=sk_test_...
+# STRIPE_WEBHOOK_SECRET=whsec_...
+# MESSAGING_PROVIDER=live
+# TWILIO_ACCOUNT_SID=
+# TWILIO_AUTH_TOKEN=
+# TWILIO_FROM=
+# WHATSAPP_TOKEN=
+# WHATSAPP_PHONE_NUMBER_ID=
+# WHATSAPP_REMINDER_TEMPLATE=rebooking_reminder:en
+# WHATSAPP_OTP_TEMPLATE=passport_code:en
+# RESEND_API_KEY=

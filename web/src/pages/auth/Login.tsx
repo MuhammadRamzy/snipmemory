@@ -47,6 +47,9 @@ export default function Login() {
       <form onSubmit={submit} className="space-y-4">
         <Input label="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
         <Input label="Password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <Link to="/forgot" className="block text-right text-sm text-muted hover:text-text">
+          Forgot password?
+        </Link>
         <ErrorText error={error} />
         <Button type="submit" size="lg" className="w-full" loading={busy}>
           Sign in

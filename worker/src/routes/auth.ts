@@ -10,6 +10,7 @@ import { TRIAL_CREDITS, TRIAL_DAYS, TRIAL_PLAN } from '../lib/plans';
 import { rateLimit } from '../lib/ratelimit';
 import { serializeSalon, serializeUser } from '../lib/serialize';
 import { createSession, currentUser, destroySession, requireUser } from '../lib/session';
+import { sendEmail } from '../lib/email';
 
 const auth = new Hono<AppEnv>();
 
@@ -100,7 +101,8 @@ auth.post('/signup', async (c) => {
   const userId = newId('usr');
   const salonId = newId('sal');
   const country = input.country.toUpperCase();
-  const admins = (c.env.PLATFORM_ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+  const admins =
+    c.env.APP_ENV === 'production' ? [] : (c.env.PLATFORM_ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
   const referrer = input.referralCode
     ? await first<{ id: string }>(db, 'SELECT id FROM salons WHERE referral_code = ?', input.referralCode.toUpperCase())
     : null;
@@ -183,6 +185,57 @@ auth.post('/password', requireUser, async (c) => {
   // Sign out every other device.
   await run(c.env.DB, "DELETE FROM sessions WHERE kind = 'user' AND user_id = ? AND id != ?", user.id, c.get('userSession')!.id);
   return c.json({ ok: true });
+});
+
+// ---------------------------------------------------------------------------
+// Password reset by email
+// ---------------------------------------------------------------------------
+auth.post('/password/forgot', async (c) => {
+  const input = await body(c, z.object({ email: z.email() }));
+  await rateLimit(c.env.DB, `forgot:${clientIp(c)}`, 10, 60 * MINUTE);
+  await rateLimit(c.env.DB, `forgot:${input.email.toLowerCase()}`, 3, 60 * MINUTE);
+  const user = await first<UserRow>(c.env.DB, 'SELECT * FROM users WHERE email = ? AND disabled_at IS NULL', input.email);
+  let devLink: string | undefined;
+  if (user) {
+    const token = randomToken(24);
+    await run(
+      c.env.DB,
+      'INSERT INTO password_resets (token_hash, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)',
+      await sha256(token),
+      user.id,
+      now() + 60 * MINUTE,
+      now(),
+    );
+    const link = `${c.env.APP_URL}/reset/${token}`;
+    await sendEmail(c.env, {
+      to: user.email,
+      subject: 'Reset your SnipMemory password',
+      text: `Hi ${user.name},\n\nReset your password here (valid for 1 hour):\n${link}\n\nIf you didn't ask for this, you can ignore this email.`,
+    });
+    if (c.env.APP_ENV !== 'production') devLink = link;
+  }
+  // Same response whether or not the email exists.
+  return c.json({ ok: true, devLink });
+});
+
+auth.post('/password/reset', async (c) => {
+  const input = await body(c, z.object({ token: z.string().min(10).max(100), password }));
+  const hash = await sha256(input.token);
+  const reset = await first<{ user_id: string }>(
+    c.env.DB,
+    'SELECT user_id FROM password_resets WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?',
+    hash,
+    now(),
+  );
+  if (!reset) throw badRequest('This reset link has expired. Request a new one.', 'reset_expired');
+  await c.env.DB.batch([
+    c.env.DB.prepare('UPDATE password_resets SET used_at = ? WHERE token_hash = ?').bind(now(), hash),
+    c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(await hashSecret(input.password), reset.user_id),
+    c.env.DB.prepare("DELETE FROM sessions WHERE kind = 'user' AND user_id = ?").bind(reset.user_id),
+  ]);
+  await destroySession(c, 'user');
+  await createSession(c, 'user', { user_id: reset.user_id });
+  return c.json(await mePayload(c));
 });
 
 // ---------------------------------------------------------------------------

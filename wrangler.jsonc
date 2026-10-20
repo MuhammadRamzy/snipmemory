@@ -32,9 +32,30 @@
     "OTP_CHANNEL": "sms",
     "PLATFORM_ADMIN_EMAILS": "admin@snipmemory.app"
   },
-  // Secrets (set with `npx wrangler secret put NAME`):
+  // Secrets (set with `npx wrangler secret put NAME --env production`):
   //   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+  //   RESEND_API_KEY, EMAIL_FROM
   //   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM
   //   WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_REMINDER_TEMPLATE, WHATSAPP_OTP_TEMPLATE
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+
+  // Production: build with `CLOUDFLARE_ENV=production npm run build`, then `npx wrangler deploy`.
+  // Bindings are not inherited by environments, so they are declared again here.
+  "env": {
+    "production": {
+      "name": "snipmemory",
+      "routes": [{ "pattern": "snipmemory.app", "custom_domain": true }],
+      "d1_databases": [
+        { "binding": "DB", "database_name": "snipmemory", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+      ],
+      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "snipmemory-media" }],
+      "triggers": { "crons": ["*/15 * * * *"] },
+      "vars": {
+        "APP_ENV": "production",
+        "APP_URL": "https://snipmemory.app",
+        "MESSAGING_PROVIDER": "live",
+        "OTP_CHANNEL": "whatsapp"
+      }
+    }
+  }
 }

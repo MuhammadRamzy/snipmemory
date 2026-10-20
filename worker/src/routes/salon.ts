@@ -9,6 +9,7 @@ import { normalizePhone } from '../lib/phone';
 import { assertStaffQuota, getPlan } from '../lib/plans';
 import { serializeMember, serializePlan, serializeSalon } from '../lib/serialize';
 import { salonAccess } from '../lib/session';
+import { sendEmail } from '../lib/email';
 
 const salon = new Hono<AppEnv>();
 
@@ -325,8 +326,14 @@ salon.post('/team/invites', salonAccess('manage'), async (c) => {
     now(),
   );
   await audit(c, { salonId: s.id, action: 'team.invited', targetType: 'invite', targetId: id, meta: { email: input.email, role: input.role } });
-  // Email delivery is intentionally left to the owner (WhatsApp / copy link) until an email provider is wired in.
-  return c.json({ id, inviteUrl: `${c.env.APP_URL}/invite/${token}` }, 201);
+  const inviteUrl = `${c.env.APP_URL}/invite/${token}`;
+  // Emailed when an email provider is configured; the link is also returned so the owner can share it on WhatsApp.
+  const emailed = await sendEmail(c.env, {
+    to: input.email,
+    subject: `Join ${s.name} on SnipMemory`,
+    text: `${c.get('user')!.name} invited you to join ${s.name} on SnipMemory as ${input.role}.\n\nAccept the invite (valid 7 days):\n${inviteUrl}`,
+  });
+  return c.json({ id, inviteUrl, emailed }, 201);
 });
 
 salon.delete('/team/invites/:inviteId', salonAccess('manage'), async (c) => {
