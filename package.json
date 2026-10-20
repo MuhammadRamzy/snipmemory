@@ -12,8 +12,8 @@
     "test": "vitest run",
     "db:migrate:local": "wrangler d1 migrations apply snipmemory --local",
     "db:migrate:remote": "wrangler d1 migrations apply snipmemory --remote",
-    "db:seed:local": "wrangler d1 execute snipmemory --local --file=./migrations/seed/demo.sql",
-    "cf-typegen": "wrangler types worker/worker-configuration.d.ts"
+    "cf-typegen": "wrangler types worker/worker-configuration.d.ts",
+    "seed:demo": "node scripts/seed-demo.mjs"
   },
   "dependencies": {
     "hono": "^4.13.13",

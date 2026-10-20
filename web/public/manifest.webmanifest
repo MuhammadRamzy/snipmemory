@@ -1,0 +1,10 @@
+{
+  "name": "SnipMemory",
+  "short_name": "SnipMemory",
+  "description": "The memory of every haircut.",
+  "start_url": "/app",
+  "display": "standalone",
+  "background_color": "#0b0b12",
+  "theme_color": "#0b0b12",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
