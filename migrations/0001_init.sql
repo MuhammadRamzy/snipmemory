@@ -375,5 +375,5 @@ INSERT INTO plans (id, name, tagline, max_staff, monthly_bill_limit, price_month
   '["Up to 10 people","Everything in Starter","Product stock & low-stock alerts","GST bills","Attendance","Customer cut photos","Excel/CSV export"]',
   '["reports","commission","closing","queue","inventory","gst","attendance","photos","export"]', 2),
  ('business', 'Business', 'For big salons & branches (per shop)', -1, -1, 69900, 699000,
-  '["Unlimited staff","Everything in Pro","All branches in one dashboard","Priority WhatsApp support","Help moving your old data"]',
+  '["Unlimited staff","Everything in Pro","All branches under one login","Priority WhatsApp support","Help moving your old data"]',
   '["reports","commission","closing","queue","inventory","gst","attendance","photos","export","multi_shop","priority_support"]', 3);

@@ -1,189 +1,174 @@
-# SnipMemory — Business Plan (v2)
+# SnipMemory — Business Plan (v3: POS + ERP for Indian salons)
 
-> **One line:** SnipMemory is the memory of every haircut. It keeps 4-angle photos and the exact clipper and scissor settings for every client, and it sends a WhatsApp nudge when a client is due back. Regulars stay regular.
-
----
-
-## 1. Why v1 had to be rebuilt
-
-The first version showed the idea well, but it could not have made money in that form:
-
-| v1 | Problem | v2 |
-|---|---|---|
-| All data in the browser's `localStorage`, plaintext passwords, a "magic" OTP of `123456`, simulated billing | It was a demo, not a product. Clients couldn't be shared across devices, and the data was lost when the cache was cleared. | Cloudflare Workers + D1 + R2, hashed credentials, real OTP and Stripe |
-| Priced **per client count**, at $29/$79/$149 | It punished salons for growing, and it cost too much for barbershops in the markets that need this most (India, GCC). | Priced **per chair/location** with localized prices. A Free tier drives product-led growth |
-| Positioned as a generic "premium B2B SaaS" with feature sprawl (clipper timer, product recommender, glassmorphic card forms) | No sharp job-to-be-done, and it took effort to explain. | Two jobs, done well: **repeat the cut** and **bring them back** |
-| Cross-salon "transfer" copied another salon's data with a fake OTP | A privacy and legal liability | **Style Passport**: the client owns their history, sharing is consent-first by OTP, and the client can revoke access or erase their data |
-| No measurement of value | Owners couldn't see ROI, so they would churn | **Recovered-revenue attribution**: "reminders brought back 14 clients, ₹6,300" |
+> **One line:** *Salon ka poora hisaab, ek phone mein.* Billing with UPI QR, barber-wise commission, udhaar khata, expenses and daily cash for every salon, barber shop and beauty parlour in India, on the Android phone the owner already has. The owner gets one app, and every barber gets their own.
 
 ---
 
-## 2. Who it is for
+## 1. Why we pivoted
 
-### Customer segments (who pays)
+v2 was a "haircut memory + reminders" tool. It solved a real but *secondary* pain, and it depended on paid WhatsApp messages. Owners of small Indian shops don't buy that. They buy something that answers the questions they ask every night:
 
-| Segment | Size of shop | What they care about | Plan fit |
+1. **"How much did we make today, and where is it — cash, UPI or udhaar?"**
+2. **"How much did each barber do, and how much do I owe him?"**
+3. **"Is the galla (cash drawer) short?"**
+4. **"Who still owes me money?"**
+
+Today most small shops answer these with a notebook, a calculator and the UPI app's history. Existing salon software (Zylu, Salonist, Dingg and others) is built for chains with a reception desk and a computer, and it costs ₹800–₹3,500 per month. **Nobody serves the 1–6 chair shop that runs on one phone.** That is the gap.
+
+Haircut photos survive as a smaller Pro feature (cut photos on the customer profile). They are not the main product any more.
+
+---
+
+## 2. Who uses it
+
+| Person | Reality | What they need from us | Where in the product |
 |---|---|---|---|
-| **Independent barber / booth renter** | 1 chair | Remembering 200+ regulars and keeping the chair full | Free → Solo |
-| **Neighbourhood barbershop** (core) | 2–6 chairs | Consistency when the regular's barber is off, and fewer lost regulars | Studio |
-| **Unisex / women's salon** | 3–10 chairs | Colour formulas, layer and length notes, longer cycles (6–8 weeks) | Studio |
-| **Chains & franchises** | 3–100 locations | Brand consistency, stylist performance, multi-branch clients | Multi-location |
-| **Barber academies** | — | Teaching students to document cuts. A distribution channel | Partner programme |
+| **Owner** (often also cuts hair) | Busy all day, checks the money at night, may run 2 shops | The day's money split by mode and barber, payroll, udhaar, profit, without typing | **Owner app** (teal): Home, Bills, Customers, Staff, Reports, Closing, Settings |
+| **Barber / stylist** | Low tech confidence, shared or cheap phone, paid by commission | Make a bill fast, show QR, see "my earning today" | **Staff app** (saffron): one big *New bill* button, My bills, Me (earnings, advances) |
+| **Manager / cashier** | Runs the counter in bigger salons | Everything the owner does, except money settings | Owner app with the *manager* role |
+| **Customer** | Pays by UPI, wants a bill on WhatsApp | Exact amount pre-filled in their UPI app, a clean bill | QR on the barber's phone, `/b/:token` bill page with a *Pay balance* button |
+| **SnipMemory ops** | Small team | Verify subscription UTRs, help owners on WhatsApp, reset PINs | Admin console |
 
-### Users (who touches it)
-
-| User | Job to be done | Where in the product |
-|---|---|---|
-| **Owner** | "Show me it's making money; keep my team consistent; keep me compliant" | Dashboard (recovered revenue), Team, Billing, Settings, CSV export |
-| **Manager / front desk** | "Find the client fast, log the visit for the right stylist, nudge overdue clients" | Clients, Reminders, assign stylist on visits |
-| **Stylist / barber** | "Who's this? How did we cut them last time? Save today's cut in 20 seconds" | Station mode (PIN), search, Repeat last cut, guided camera |
-| **Client (end consumer)** | "Get the same cut anywhere; don't spam me; let me delete my photos" | Style Passport (`/passport`), one-tap opt-out link |
-| **SnipMemory ops** | "Grow MRR, support salons safely, catch problems early" | Admin console: metrics, salon controls, audited impersonation, plans, announcements, message log |
-
-### Key scenarios the product is built around
-
-1. **The regular walks in.** The stylist types 4 digits of the phone number, sees the last cut's photos and recipe, and taps *Repeat last cut*.
-2. **The regular's barber is off.** Another stylist opens the same record and gets the exact guard numbers and the neckline. The client leaves happy and stays with the shop.
-3. **A new client who has been to another SnipMemory salon.** The new salon requests the Style Passport, the client reads out an OTP, and the history is unlocked. The client's approval is recorded.
-4. **A colour client.** The formula, developer and timing are kept per visit, so there's no guessing at the next root touch-up.
-5. **A client drifting away.** Day 24 of a 21-day rhythm: an automatic WhatsApp goes out inside salon hours. The client books, and the visit is credited as *recovered*.
-6. **A Free-plan barber with no budget.** The reminders queue gives a one-tap *WhatsApp* button with a pre-written message, sent from the barber's own WhatsApp at no cost.
-7. **A shared tablet at the front desk.** The owner pairs it once. Stylists tap their name and enter a PIN, and every visit is attributed correctly.
-8. **A client asks to be forgotten.** They erase their data at that salon from the passport, or the owner erases it from the client page. Photos are purged from R2.
-9. **A support ticket.** Admin opens the salon as support. This requires a reason, lasts 1 hour, records every action in the audit log, and blocks billing actions.
-10. **A failed card.** The salon goes to *past due* and the owner sees a banner. After 14 days it falls back to Free. Nothing is deleted, and automated reminders stop.
+**Designing for low-literacy users** (these are hard rules in the UI):
+- Big tiles and buttons (48–64 px), a bottom tab bar, and one main action per screen.
+- Login with a mobile number and a **UPI-style PIN pad**: 4 digits for staff, 6 for owners. No passwords or emails.
+- Words barbers already use: *udhaar*, *galla*, *kharcha*, *advance*. Every money figure is shown in ₹ with Indian digit grouping (₹1,25,000).
+- No browser pop-ups. Bottom sheets with a clear "Yes / No".
+- Two apps with two colours, so the owner app and staff app can't be confused.
+- Every string goes through `t()`, so **Hindi, Malayalam, Tamil, Telugu, Kannada, Marathi, Bengali and Gujarati** can be added without touching screens. The font (Noto Sans) supports Indic scripts.
 
 ---
 
-## 3. Positioning & competition
+## 3. Workflows we handle (from real salon days)
 
-**Positioning:** *the memory layer for the chair*. SnipMemory **sits next to** whatever the shop uses for bookings (Fresha, Booksy, Squire, Square, WhatsApp, a paper diary). The salon's booking link is placed in every reminder. We don't ask a shop to switch its booking system, and that removes the biggest objection in this market.
-
-| | Booking suites (Booksy, Fresha, Squire, Vagaro) | Indian salon ERPs (Zylu, Salonist, Dingg, Easy Salon) | **SnipMemory** |
-|---|---|---|---|
-| Core job | Appointments, payments, marketplace | Billing/POS, inventory, staff payroll | **Repeat the cut + bring them back** |
-| Haircut photos | Generic attachments, if any | Rare | **Guided 4-angle capture, face blur, "last time" overlay** |
-| Structured cut recipe | Free-text notes | Free-text notes | **Sides / top / neckline / beard / colour fields** |
-| Return reminders | Fixed-interval campaigns | SMS blasts | **Learns each client's rhythm; WhatsApp-first; attribution** |
-| Portable client history | No | No | **Style Passport (network effect)** |
-| Price signal | Booksy ≈ $29.99/mo + $20/extra staff; Fresha "free" + ~2.19% + $0.20 per payment; Squire $30–$250/mo | ₹500–₹3,000/mo | **Free → ₹299 / $12 per chair** |
-
-**Moat over time:** the Style Passport. Every client who sees their history at salon A makes salon B more likely to adopt SnipMemory, because "your new client's history is waiting for you". The more salons in a city use it, the more valuable it is for every salon there, and that is hard to copy for a booking app whose marketplace competes with its own shops.
+| Scenario | How SnipMemory handles it |
+|---|---|
+| Walk-in, pays by UPI | Tap services → *UPI / QR* → customer scans (amount pre-filled) → *Money received* → bill sent on WhatsApp |
+| Cash with change | *Cash* → tap ₹500 → app shows **"Give back ₹350"** |
+| Half UPI, half cash | *Part pay / Udhaar* → enter cash and UPI; show a QR for just the UPI part |
+| Regular pays later | Customer mobile number + part pay → the rest goes on their **khata** as udhaar |
+| Customer clears old udhaar while paying for today | The checkout shows *"Old udhaar ₹200 — collect now"*; one QR collects both |
+| Advance (wedding season, monthly regulars) | *Add advance* on the customer; the next bill offers *"Use advance ₹X"* |
+| Father + 2 kids, different barbers | The owner sets *who did* each line in the cart; commission is split per line |
+| Owner also cuts | The owner is a staff member too and appears in barber-wise reports |
+| Barber wants to give a discount | Allowed only within the owner's limit (e.g. 10%). Quietly lowering the price is blocked |
+| Owner worried barbers will take customers | Hide customer mobile numbers from staff (setting) |
+| Wrong bill | Staff can cancel their own bill within 15 minutes; the owner can cancel any bill. Udhaar, advance and stock are reversed, and a reason is recorded |
+| No internet / power cut | Bills are saved on the phone and upload automatically, with no duplicates. The price list is cached |
+| Sunday rush | **Token queue**: walk-ins get numbers, barbers tap *Start*, then *Make bill* from the token |
+| Bridal / festival booking | Appointment in the queue + advance on the khata |
+| Product sale (gel, oil) | Product tiles with stock; product commission %; low-stock warning; stock purchases recorded as an expense |
+| Commission-only, salary-only or both | Per-staff service %, product %, fixed salary; advances, bonuses, deductions → **"Still to pay ₹X"** each month |
+| Salary advance mid-month | *Give advance* (cash/UPI); it is deducted on the payroll screen and counted in cash closing |
+| End of day | **Galla hisaab**: opening + cash bills + cash collections − cash expenses − cash to staff = expected; enter the counted cash, see short or extra |
+| Rent, electricity, tea | Expenses by category → **profit estimate** in reports |
+| GST-registered salon | GSTIN, 5/12/18%, prices inclusive or exclusive, CGST/SGST on the bill |
+| Has a thermal printer | *Print* opens a 58/80 mm receipt layout. Without a printer, the bill goes on WhatsApp |
+| Two branches | One login, switch shops from Home; each shop has its own staff, bills and plan |
+| Barber forgets PIN / leaves the job | The owner resets the PIN, or removes the barber (logged out instantly, old bills kept) |
+| Owner forgets PIN | WhatsApp support verifies the owner and issues a one-time PIN, which must be changed at next login |
+| Customer not coming back | *Not coming* filter → one-tap WhatsApp "we miss you"; birthday list with WhatsApp wishes |
 
 ---
 
 ## 4. Market
 
-### Sizing (conservative, bottom-up)
+- **Size:** roughly **5 lakh unorganised salons** (≈3 lakh barber shops + 2 lakh beauty parlours, by Jawed Habib's company study) plus **13,000+ organised salons**. The Indian salon services market is estimated at **US$7.8–12.6 billion (2025)**, depending on the source.
+- **Serviceable now (SAM):** shops whose owner uses a smartphone and accepts UPI. That is nearly all urban and semi-urban shops; we estimate **~2.5 lakh**.
+- **Who we beat:**
 
-| Market | Shops (estimate) | Basis |
-|---|---|---|
-| United States — barbershops only | **~155,000** businesses (2025) | IBISWorld |
-| India — organized salons | **~13,000** organized + several hundred thousand unorganized outlets; ~110,000 rural salons alone | Ken Research |
-| GCC (UAE, KSA, Qatar, Kuwait, Oman, Bahrain) | ~25,000–35,000 (our estimate, high barbershop density per capita) | Assumption, to validate |
-| UK & Ireland | ~40,000 hair & barber businesses (our estimate) | Assumption, to validate |
-
-- **SAM (serviceable now):** urban shops with 1–10 chairs where the owner runs the business on a smartphone and WhatsApp, in India (top 30 cities), the GCC, the UK and the US. Our working estimate is **~350,000 shops**.
-- **SOM (36 months):** 1.2% of SAM is **~4,000 paying shops** (plus ~15,000 Free shops feeding the passport network).
-- Market value context: India salon services are ~US$7.8–12.6 B (2025, varies by source); US barbershop revenue is ~US$7.0 B.
-
-### Launch sequence
-
-1. **Home market: India (South India first), WhatsApp-native.** Field sales are cheap, density is high, and barber–client loyalty is strong. INR pricing is tuned for this market.
-2. **GCC (Month 6+):** a large South Asian barber workforce with operator networks that span India and the GCC, high ticket prices and AED pricing. Strong word of mouth along that corridor.
-3. **UK (Month 9+):** a dense barbershop culture with high WhatsApp usage, UK GDPR-ready from day one.
-4. **US (Month 12+):** the largest pool of barbershops. Positioned as a Booksy/Squire *companion*. SMS-first channel.
-
----
-
-## 5. Pricing (implemented in `migrations/0001_init.sql`, editable in Admin → Plans)
-
-The value metric is **chairs and reminders**, never clients. Annual billing gives 2 months free.
-
-| Plan | Who | INR / mo | USD / mo | GBP | AED | Includes |
-|---|---|---|---|---|---|---|
-| **Free** | 1 chair trying it | ₹0 | $0 | £0 | 0 | 1 stylist, 75 clients, photos & recipes, click-to-send WhatsApp, passport |
-| **Solo** | Independent barber | ₹299 | $12 | £10 | 45 | Unlimited clients, 100 automated reminders, smart cycle, recovered-revenue report |
-| **Studio** ★ | 2–6 chairs | ₹899 | $39 | £32 | 145 | 6 stylists, station mode + PINs, 400 reminders, passport import, team analytics, CSV |
-| **Multi-location** | Chains (per location) | ₹1,999 | $79 | £65 | 290 | Unlimited stylists, 1,000 reminders, branding, priority support, migration |
-
-- **Trial:** 14 days of Studio with 50 reminder credits and no card. At the end the salon **falls back to Free automatically** and no data is deleted. A lockout would cause churn and resentment; falling back to Free keeps the salon in the passport network and keeps it upgradeable.
-- **Usage revenue:** reminder credit packs (250 for ₹349 / $6; 1,000 for ₹1,199 / $20) that never expire.
-- **Referral:** when a referred salon converts to paid, both salons get 250 credits. The cost to us is cents, and it is seen as worth about ₹350.
-
-### Why these numbers
-
-- A Studio shop with 300 active clients typically has ~75 clients a month go past their usual return date. If reminders win back **6%** of them at a ₹400 ticket, that is **₹1,800/month recovered, 2× the price**. The in-app ROI calculator shows exactly this.
-- Solo is priced below a single haircut in every market. That price clears the impulse threshold for owner-operators.
-
----
-
-## 6. Unit economics
-
-**Infrastructure (Cloudflare).** A photo is ~120–250 KB after on-device compression, so a visit with 4 angles is ≈ 0.7 MB. A busy Studio shop doing 1,000 visits a month adds ~0.7 GB/month. At R2's **$0.015/GB-month** that is about **$0.01 per month**, and egress is free. Workers and D1 costs stay in single-digit dollars per month until we reach thousands of salons. **Infrastructure is <2% of revenue.**
-
-**Messaging, the real cost of goods sold.** Rebooking nudges count as *marketing* messages on WhatsApp.
-
-| Market | Cost / reminder (approx.) | Studio at 100% credit use | Studio at expected ~35% use |
+| | Zylu / Salonist / Dingg-type salon ERPs | Khatabook / Vyapar-type general billing | **SnipMemory** |
 |---|---|---|---|
-| India (WhatsApp marketing ≈ ₹0.86 + 18% GST ≈ ₹1.02) | ₹1.02 | ₹408 of ₹899 (45%) | ₹143 (16%) |
-| US (SMS ≈ $0.011 incl. carrier fees) | $0.011 | $4.40 of $39 (11%) | $1.54 (4%) |
-| UK/GCC (WhatsApp marketing ≈ $0.03–0.05) | ~$0.04 | $16 of $39 (41%) | $5.60 (14%) |
+| Built for | Chains, reception desk, computer | Kirana / retail | **1–20 chair salons, phone only** |
+| Barber-wise commission & payroll | Yes (complex) | No | **Yes, simple** |
+| Separate barber app with PIN | Rare | No | **Yes** |
+| UPI QR with the exact amount | Varies | Yes | **Yes, plus split and udhaar** |
+| Price per month | ~₹800–₹3,500 (Salonist ~₹1,061–1,698; SalonBoost ₹799–1,199; Dingg-type ₹1,500–3,500 for 3–8 staff) | Free–₹300 | **Free, ₹149, ₹349, ₹699** |
 
-- **Blended gross margin target: ≥ 80%.** Levers: the credit caps per plan (admin-editable); free click-to-send as the default for Free/Solo; credit packs priced at ~35% margin over the WhatsApp rate; OTP and passport codes are platform cost but go out only on demand and are rate limited.
-- **Watch item:** heavy Indian Studio users. If median credit usage goes above 50%, cut Studio's included reminders to 300 for INR, or add a per-currency credit allowance.
+Competitor prices are from public listings and are indicative; confirm with each vendor.
 
-**Acquisition and payback** (targets, to be validated in the pilot):
+---
 
-| | India (field + referral) | UK/GCC/US (digital + partners) |
-|---|---|---|
-| Blended CAC per paying shop | ₹2,500 (~$30) | $120 |
-| ARPA (incl. packs) | ₹850 (~$10) | $42 |
-| Gross-margin payback | ~3.5 months | ~3.5 months |
-| Target logo churn | < 3% / month | < 2.5% / month |
-| LTV : CAC | ≥ 3 : 1 | ≥ 3 : 1 |
+## 5. Pricing (self-serve by shop size, all in INR)
+
+Each owner picks a plan by the number of people who make bills. Annual plans give 2 months free. **No payment gateway**: the owner pays our UPI ID from the in-app QR and types the UTR, and we approve after checking the bank statement.
+
+| Plan | For | Monthly | Yearly | Limits & features |
+|---|---|---|---|---|
+| **Free** | 1-chair shop | ₹0 | ₹0 | Owner + 1 barber, **300 bills/month**, UPI QR bills, WhatsApp bills, customers & udhaar, expenses, today/yesterday report |
+| **Starter** | Small shop | **₹149** | ₹1,490 | Up to 4 people, unlimited bills, barber commission & payroll, reports for any date, cash closing, token queue |
+| **Pro** ★ | Busy salon | **₹349** | ₹3,490 | Up to 10 people, product stock, GST bills, attendance, cut photos, Excel/CSV export |
+| **Business** | Big salon / branches | **₹699** per shop | ₹6,990 | Unlimited staff, all branches under one login, priority WhatsApp support, help moving old data |
+
+- **Trial:** 30 days of Pro for every new shop, with no card. At the end the shop moves **automatically to Free**. Nothing is locked or deleted.
+- **Why Free is limited by bills:** a 1-chair shop doing 10 cuts a day (≈300 a month) stays free and spreads the word. A shop doing 15+ cuts a day has the money to pay ₹149.
+- **Price anchor:** Starter (₹149) costs less than two haircuts a month. We are 5–10× cheaper than salon ERPs because we have no field installs, no SMS costs and no gateway fees.
+- Plans, prices and limits can be edited from the admin console without a deploy.
+
+---
+
+## 6. Operating cost (why we stay profitable at these prices)
+
+**What we removed:** payment gateways, SMS and WhatsApp APIs, and email. Customers get bills through the *owner's* WhatsApp (click-to-send), and payments go to the *owner's* UPI.
+
+**Infrastructure (Cloudflare):** Workers Paid is ~$5/month and includes 10M requests. D1 costs about $0.75/GB-month plus per-row charges, and R2 about $0.015/GB-month with free egress.
+
+| Driver, per shop per month (40 bills/day) | Estimate |
+|---|---|
+| API requests (~10 per bill) | ~12,000 |
+| D1 rows written (~7 per bill) | ~8,400 |
+| Data stored (~2 KB per bill) | ~2.5 MB |
+| Photos (Pro, optional, ~150 KB each) | ~0–20 MB |
+| **Infra cost per shop** | **≈ ₹1–3 per month** |
+
+At 10,000 shops, infrastructure is roughly **₹25,000–40,000/month**, under 2% of revenue.
+
+**The real costs are people:**
+- **Payment verification.** At 10k paying shops with 70% on annual plans, that is ~3,600 UTR checks a month (~120/day ≈ 4 hours of one person). This becomes a bank-statement CSV auto-match in admin (roadmap), cutting it to minutes.
+- **WhatsApp support** in regional languages: 1 agent per ~2,000 paying shops.
+- **Field onboarding** in launch clusters (see GTM).
+
+**Blended ARPA estimate:** 55% Starter, 35% Pro, 10% Business, with 70% on annual plans, comes to **≈ ₹240/month per paying shop**. Gross margin is **~95%** after infrastructure; contribution margin is ~80% after support and verification.
 
 ---
 
 ## 7. Go-to-market
 
-1. **Field "demo in the chair" (India, GCC).** A rep sits in on a slow afternoon, adds the shop's 10 most loyal regulars with photos, and leaves. Within 2 weeks the owner sees *"3 clients are due"*. The goal is **activation before the sales pitch**.
-2. **Supplier partnerships.** Barber supply distributors and product brands (clippers, styling products) bundle 3 months of Studio with their trade orders, and we share credits as their loyalty currency.
-3. **Barber academies.** Students use Free to build a documented portfolio. When they open a shop, they upgrade.
-4. **Passport-led virality.** Every reminder and passport page carries "Powered by SnipMemory". A client who asks a non-user salon "can you see my passport?" gives us a warm lead (an invite-your-salon link is on the roadmap).
-5. **Content on Instagram and YouTube.** Before/after "same cut, different barber" challenges, which show the product doing its job.
-6. **Booking-app companion listing.** Partner listings and integrations (Booksy, Fresha, Square) in Year 2. Until then, a booking link field is enough.
+1. **Cluster field sales.** Barber shops sit in clusters (market roads, bus stands). A field agent signs up 8–12 shops a day by setting up the price list and UPI ID on the owner's phone in 5 minutes and making the first real bill with them. Agents are paid per **activated** shop (10+ bills in 7 days).
+2. **The staff app spreads itself.** Every barber added gets an app link on WhatsApp. Barbers change shops often and carry the app to their next employer. Referral reward: **1 month free** for both shops when the referred shop pays (applied from the admin console for now, automatic later).
+3. **Supply distributors and brands.** Barber-supply wholesalers and grooming brands bundle 3 months of Starter with trade orders.
+4. **Short videos in Hindi, Malayalam, Tamil and Telugu** (YouTube Shorts, Instagram Reels): "End-of-day hisaab in 10 seconds", "Barber's salary without fights".
+5. **Launch order:** Kerala and Tamil Nadu (high UPI use, dense barber clusters) → Karnataka and Telangana → Maharashtra and Gujarat → Hindi belt, after the Hindi UI ships.
 
-### Activation & retention metrics (instrumented in the product)
+### Metrics that matter
 
 | Stage | Metric | Target |
 |---|---|---|
-| Activation | ≥ 10 visits with photos in the first 7 days | 45% of signups |
-| Habit | Weekly active shops (≥ 1 visit logged) | 70% of paid |
-| Value | Recovered visits / shop / month (Dashboard "Brought back by reminders") | ≥ 4 |
-| Conversion | Trial → paid | 18% (India), 25% (UK/US) |
-| Expansion | Credit pack attach rate | 15% of paid shops |
-| Network | Passport share requests / month | Grows with city density |
+| Activation | 10+ bills in first 7 days | 60% of signups |
+| Habit | Shops billing on 5+ days a week | 70% of active shops |
+| Team adoption | Shops where 2+ people bill | 45% |
+| Conversion | Trial → paid by day 45 | 15–20% |
+| Retention | Monthly paid logo churn | < 3% |
+| Expansion | Starter → Pro upgrades within 6 months | 20% |
 
-The admin console already reports signups, trial expiries, churn, MRR by currency, message delivery and recovered visits.
+The admin console already tracks shops, trials, paid shops, MRR, shops billing in the last 7 days, bills and GMV (money billed through the POS), pending payments and signups.
 
 ---
 
-## 8. Financial outlook (36 months, base case)
+## 8. Financial outlook (base case, 36 months)
 
-Assumptions: 70% of paying shops in India (ARPA ~$10) and 30% elsewhere (ARPA ~$42), for a blended ARPA of ≈ $19.6. Monthly churn is 2.8%. Messaging is 12% of revenue and infrastructure 2%.
+Assumptions: ARPA ₹240/month; Free → paid conversion grows as features and word of mouth mature; 2.5% monthly churn.
 
 | | Month 6 | Month 12 | Month 24 | Month 36 |
 |---|---|---|---|---|
-| Free shops (passport network) | 900 | 3,000 | 9,000 | 15,000 |
-| Paying shops | 150 | 600 | 2,000 | 4,000 |
-| MRR | ~$2.9k | ~$11.8k | ~$39k | ~$78k |
-| ARR run-rate | ~$35k | ~$141k | ~$470k | ~$940k |
-| Gross margin | 82% | 84% | 85% | 86% |
-| Team | 2 founders + 1 field rep | + 2 reps, 1 support | 8 people | 12 people |
+| Free shops | 3,000 | 9,000 | 25,000 | 45,000 |
+| Paying shops | 400 | 1,800 | 5,500 | 10,000 |
+| MRR | ₹0.96 L | ₹4.3 L | ₹13.2 L | ₹24 L |
+| ARR run-rate | ₹11.5 L | ₹52 L | ₹1.6 Cr | ₹2.9 Cr |
+| Team | 2 founders + 2 field agents | + 2 support, 4 agents | 15 | 22 |
 
-- **Break-even** is reached at roughly 1,600–1,800 paying shops (about Month 20–22), on a lean team with a ~$30k monthly burn.
-- **Capital need:** ~$250–350k pre-seed/angel to reach break-even with buffer. Most of it goes to field sales in two cities and WhatsApp Business API onboarding.
+- **Break-even** is about **₹8–9 L MRR** (≈3,500–3,800 paying shops) on a lean team, expected around **Month 18–20**.
+- **Upside** (not in the base case): optional add-ons later, such as a paid Bluetooth-printer bundle, regional-language premium support, and a "SnipMemory Pay" UPI auto-confirmation partnership if owners ask for it.
 
 ---
 
@@ -191,45 +176,39 @@ Assumptions: 70% of paying shops in India (ARPA ~$10) and 30% elsewhere (ARPA ~$
 
 | Risk | Mitigation |
 |---|---|
-| WhatsApp price rises or policy changes for marketing templates | Click-to-send fallback (free); SMS fallback; credit caps; prices editable per plan without deploys |
-| Privacy and regulation (GDPR/UK GDPR, India DPDP Act 2023, UAE PDPL): photos of faces | Per-client photo consent, enforced by the API; on-device face blur; private R2 objects served only to authorised viewers; erasure and export for salons and clients; audited support access. **Get a legal review before launch** in each market |
-| Booking platforms add photo notes | Our depth (structured recipe, cycle learning, attribution) and the cross-salon passport network |
-| Stylists won't take photos when busy | 20-second guided capture, *Shoot all 4* auto-advance and station PINs. "Repeat last cut" pays the stylist back on the next visit |
-| Salons fear competitors seeing their clients via the passport | Sharing happens only with the client's OTP; the client chooses. Salon notes are framed as a benefit to the client, which builds loyalty |
-| Low willingness to pay in India | Free plan, ₹299 entry point, ROI shown in rupees on the dashboard, credits as a low-friction upsell |
+| Owners won't pay | A free plan that genuinely works; ₹149 entry price; pricing tied to shop size; value shown daily (galla match, barber payroll) |
+| Fake or wrong UTRs | Approve only after matching the bank statement; UTR uniqueness enforced; audit log |
+| Manual verification doesn't scale | Push annual plans; build bank-statement CSV auto-match; later, optional UPI Autopay if the owner wants it |
+| Barbers misuse the staff app (fake discounts, deleting bills) | Discount caps, no silent price lowering, 15-minute self-cancel window, every cancellation needs a reason and is audited, owner sees everything |
+| Phone lost or shared | Sessions per app, PINs rate-limited (6 tries / 15 min), owner removes staff instantly |
+| Internet drops | Offline outbox with idempotent upload; cached catalogue and shop data |
+| Data protection (DPDP Act 2023) | Minimal data, private photos, owner can delete customers, no messages sent by us; get a legal review before launch |
+| Competitors copy the price | Our cost base (no SMS, no gateway, serverless) lets us stay cheaper, and the barber-app network effect grows with every shop |
 
 ---
 
-## 10. Product roadmap
+## 10. Roadmap
 
-**Now (v2, this rebuild):** everything described above.
+**Next (0–3 months)**
+- Hindi UI, then Malayalam, Tamil, Telugu, Kannada (the `t()` dictionaries are ready).
+- Bank-statement CSV upload in admin to auto-approve matching UTRs.
+- Packages and memberships (e.g. "10 haircuts for ₹900"), building on the advance balance.
+- Direct Bluetooth thermal printing (ESC/POS) for shops that have a printer.
+- Consolidated multi-branch dashboard for Business.
 
-**Next 3 months**
-- Inbound WhatsApp webhook: treat a "STOP" reply as an opt-out, track delivery and read receipts.
-- Booking-link deep links (Fresha / Booksy / Square) and a "Book" button in the passport.
-- Email verification at signup. Self-serve salon deletion with a 30-day grace period.
-- Offline capture queue (Service Worker + IndexedDB) for flaky salon Wi-Fi.
-- Razorpay as a payment provider for India (UPI AutoPay mandates).
-
-**3–9 months**
-- Client self check-in by QR at the door, which pulls up the record for the stylist automatically.
-- Passport "invite this salon" flow (viral loop).
-- Multi-location dashboard and cross-branch clients for chains.
-- Stylist portfolio pages (opt-in public gallery with blurred faces) for client acquisition.
-
-**9–18 months**
-- AI cut recipe: suggest technique fields from the 4 photos and describe the cut in plain words for the next stylist (on-device first, privacy-preserving).
-- Product retail recommendations and affiliate revenue with supplier partners.
-- API and integrations marketplace.
+**Later (3–12 months)**
+- Appointment reminders through the owner's WhatsApp (click-to-send lists).
+- Staff leave and attendance reports, salary slips as PDF.
+- Optional UPI payment auto-confirmation through a partner bank. This stays optional, keeping the no-gateway default.
+- A supplier marketplace for products (commission revenue).
 
 ---
 
 ## Sources
 
-- IBISWorld — [Barber Shops in the US: number of businesses](https://www.ibisworld.com/united-states/number-of-businesses/barber-shops/5806/) and [market size](https://www.ibisworld.com/united-states/market-size/barber-shops/5806/)
-- Ken Research — [India Beauty Salon Market](https://www.kenresearch.com/industry-reports/india-beauty-salon-market.md)
-- Deep Market Insights — [India Salon Services Market](https://deepmarketinsights.com/vista/insights/salon-services-market/india)
-- WhatsApp India rates — [Monty Mobile](https://montymobile.com/blogs/whatsapp-business-api-pricing-in-india-inr-rates-gst-and-the-2026-currency-migration-deadline), [baat.ai](https://baat.ai/blog/whatsapp-api-pricing-india), [MyOperator](https://myoperator.com/blog/whatsapp-business-api-pricing-india-2026)
-- Competitor pricing — [Squire vs Booksy](https://getsquire.com/compare/squire-vs-booksy), [Software Advice: Squire](https://www.softwareadvice.com/barbershop-software/squire-profile/), [Capterra: Squire](https://www.capterra.co.za/reviews/153899/squire-barber-appointment-app)
+- Jawed Habib salon count estimate — [Third Eyesight](https://www.thirdeyesight.in/?p=2838)
+- Organised salon count and market size — [Ken Research](https://www.kenresearch.com/industry-reports/india-beauty-salon-market.md), [Deep Market Insights](https://deepmarketinsights.com/vista/insights/salon-services-market/india), [Nexdigm](https://www.nexdigm.com/market-research/report-store/india-salon-market/)
+- Competitor prices — [TechImply: Salonist](https://www.techimply.com/profile/salonist), [Capterra: SalonBoost](https://www.capterra.ae/software/1074125/SalonBoost), [Codingclave salon software cost guide](https://codingclave.com/guides/salon-management-software-cost-india-2026), [xpay: Zylu](https://www.xpay.sh/agent-ready-index/zylu-co/)
+- Cloudflare pricing — [SpendHound](https://spendhound.com/marketplace/cloudflare-pricing), [MakerKit calculator](https://makerkit.dev/pricing-calculator/cloudflare); confirm on Cloudflare's own pricing page.
 
-Figures marked "estimate" or "assumption" must be validated during the pilot. Messaging rates change several times a year, so check Meta's and Twilio's current rate cards before budgeting.
+Numbers marked as estimates are planning assumptions to be validated in the first two launch cities.

@@ -1,99 +1,63 @@
 # SnipMemory
 
-**The memory of every haircut.** SnipMemory saves 4-angle photos and the exact cut recipe (guards, lengths, neckline, beard, colour formula) for every client. When a client is due back, it sends a WhatsApp/SMS nudge. Any stylist can repeat any cut, and regulars stay regular.
+**Salon ka poora hisaab, ek phone mein.** POS + ERP for Indian salons, barber shops and beauty parlours, from a single chair to many branches, on any Android phone.
 
-- **Salons and barbershops** get client lookup by phone, guided photo capture with on-device face blur, *Repeat last cut*, smart return-cycle reminders with revenue attribution, a team with station PINs, and billing.
-- **Clients** get a free **Style Passport** (`/passport`). They can see every cut, share their history with a new salon by OTP, stop reminders, download their data or erase it.
-- **SnipMemory operators** get an admin console with MRR, signups, churn, salon controls, audited support access, a plan and price editor, announcements, message delivery and the audit log.
+- **Owner app** (`/owner`): today's sale by UPI, cash and udhaar; barber-wise sales and commission; staff payroll (salary, advances, payouts); customers with udhaar/advance khata; expenses and profit; daily cash closing (galla); token queue; products and stock; GST bills; price list; branches; plan payment.
+- **Staff app** (`/staff`): every barber logs in with mobile + 4-digit PIN, makes bills, shows the **UPI QR with the exact amount**, gives change, sends the bill on WhatsApp, and sees only their own cuts and earnings.
+- **Customer bill** (`/b/:token`): WhatsApp-friendly bill with a *Pay balance* UPI button and a thermal-printer layout.
+- **Admin** (`/admin`): MRR, active shops, UPI subscription verification, shop controls, owner PIN reset, support access, plan pricing.
 
-See [`docs/BUSINESS_PLAN.md`](docs/BUSINESS_PLAN.md) for customers, market, pricing and go-to-market, and [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how it's built.
+No payment gateway, no SMS: payments go straight to the shop's UPI ID, and messages go through the owner's own WhatsApp. Bills work **offline** and sync later.
+
+Read [`docs/BUSINESS_PLAN.md`](docs/BUSINESS_PLAN.md) for customers, workflows, pricing (Free / ₹149 / ₹349 / ₹699) and go-to-market, and [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how it is built.
 
 ## Stack
 
-| Layer | Tech |
-|---|---|
-| API | Cloudflare Workers + [Hono](https://hono.dev), Zod validation |
-| Database | Cloudflare D1 (SQLite) with SQL migrations in `migrations/` |
-| Photos | Cloudflare R2 (private; served through an authorised endpoint) |
-| Jobs | Cron Trigger every 15 min (reminders, trials, credits, cleanup) |
-| Web | React 19 SPA + React Router + Tailwind CSS v4, built by Vite and served by the same Worker |
-| Payments | Stripe Checkout, Billing Portal and webhooks |
-| Messaging | WhatsApp Cloud API (templates) with Twilio SMS fallback; Resend for email |
-| Tests | Vitest inside `workerd` via `@cloudflare/vitest-plugin` |
+Cloudflare Workers (Hono) · D1 · R2 · React 19 + React Router + Tailwind CSS v4 (Vite, `@cloudflare/vite-plugin`) · two PWAs with a service worker · Vitest in workerd.
 
-## Run it locally
+## Run locally
 
 ```bash
 npm install
-npm run db:migrate:local      # create the local D1 schema
-npm run dev                   # http://localhost:5173 — Worker + SPA with local D1/R2
-npm run seed:demo             # in a second terminal: demo salon, team, clients, photos
+npm run db:migrate:local
+npm run dev            # http://localhost:5173
+npm run seed:demo      # second terminal: demo salon with barbers, bills, udhaar, expenses
 ```
 
-Demo logins created by the seeder:
+| App | URL | Login |
+|---|---|---|
+| Owner | `/owner` | mobile `9847000001`, PIN `482913` |
+| Staff | `/staff` | Suresh `9847000002` PIN `4826`, Vinod `9847000003` PIN `7391` |
+| Admin | `/admin` | phone `9847000099`, password `local-admin-password` |
 
-| Who | Login |
-|---|---|
-| Salon owner (Fade Lab) | `demo@snipmemory.app` / `demo-password` |
-| Platform admin | `admin@snipmemory.app` / `admin-password` → `/admin` |
-| Stylists (after pairing a device from **Team → Pair this device**) | Ravi PIN `1111`, Maya PIN `2222` |
-| Client passport | `/passport`, India, `98470 12345` |
-
-In development, nothing is sent externally. Messages are only logged, OTP codes and reset links are shown on screen, and upgrades activate without payment ("test mode").
+On a phone, open the URL and choose **Add to Home screen**: the Owner and Staff apps install as two separate apps.
 
 ```bash
-npm test          # API integration tests in workerd
+npm test           # API tests (workerd + D1)
 npm run typecheck
 npm run build
 ```
 
-## Deploy to Cloudflare
+## Deploy
 
 ```bash
 npx wrangler login
-npx wrangler d1 create snipmemory                 # paste database_id into wrangler.jsonc (top level and env.production)
+npx wrangler d1 create snipmemory               # put the id in wrangler.jsonc (top level and env.production)
 npx wrangler r2 bucket create snipmemory-media
 npm run db:migrate:remote -- --env production
-
-# secrets (only the ones you use)
-npx wrangler secret put STRIPE_SECRET_KEY --env production
-npx wrangler secret put STRIPE_WEBHOOK_SECRET --env production
-npx wrangler secret put WHATSAPP_TOKEN --env production
-npx wrangler secret put WHATSAPP_PHONE_NUMBER_ID --env production
-npx wrangler secret put WHATSAPP_REMINDER_TEMPLATE --env production   # e.g. rebooking_reminder:en
-npx wrangler secret put WHATSAPP_OTP_TEMPLATE --env production        # e.g. passport_code:en
-npx wrangler secret put TWILIO_ACCOUNT_SID --env production
-npx wrangler secret put TWILIO_AUTH_TOKEN --env production
-npx wrangler secret put TWILIO_FROM --env production
-npx wrangler secret put RESEND_API_KEY --env production
-npx wrangler secret put EMAIL_FROM --env production
-
+# set PLATFORM_UPI_VPA, PLATFORM_UPI_NAME, SUPPORT_WHATSAPP, APP_URL in wrangler.jsonc → env.production.vars
 CLOUDFLARE_ENV=production npm run build
 npx wrangler deploy
+node scripts/create-admin.mjs 98XXXXXXXX "Your Name" 'a-strong-password' --remote --env production
 ```
 
-Then:
+There are no secrets to configure: there is no gateway, SMS or email provider.
 
-1. **Stripe:** add a webhook endpoint at `https://<your-domain>/api/webhooks/stripe` for `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid` and `invoice.payment_failed`, and enable the Billing Portal. Plan prices come from Admin → Plans (inline `price_data`), or set Stripe price IDs there.
-2. **WhatsApp:** get two templates approved:
-   - a *marketing* template whose body takes `{{1}}` first name, `{{2}}` salon, `{{3}}` days and `{{4}}` booking link;
-   - an *authentication* template with a copy-code button.
-3. **Platform admin:** for safety, admin rights are never granted by signup in production. Sign up normally, then run:
-   ```bash
-   npx wrangler d1 execute snipmemory --remote --env production \
-     --command "UPDATE users SET is_platform_admin = 1 WHERE email = 'you@yourcompany.com'"
-   ```
+## Configuration (`wrangler.jsonc` vars)
 
-## Configuration
-
-| Variable | Purpose |
+| Var | Meaning |
 |---|---|
-| `APP_ENV` | `development` / `production`. Production hides dev codes and disables test-mode billing |
-| `APP_URL` | Public origin, used in links (reminders, invites, Stripe return URLs) |
-| `MESSAGING_PROVIDER` | `log` (dev) or `live` |
-| `OTP_CHANNEL` | `sms` or `whatsapp` |
-| `PLATFORM_ADMIN_EMAILS` | Dev-only convenience: these signups become admins (ignored in production) |
-
-## What changed from v1
-
-v1 was a Next.js front-end prototype: data in `localStorage`, plaintext passwords, a hard-coded OTP, and simulated billing and admin. v2 is a full rebuild with a real multi-tenant backend on Cloudflare. The reasoning, and the revised pricing and go-to-market, are in the business plan.
+| `APP_ENV` | `development` / `production` |
+| `APP_URL` | Public URL used in links |
+| `PLATFORM_UPI_VPA`, `PLATFORM_UPI_NAME` | Where shops pay their SnipMemory subscription |
+| `SUPPORT_WHATSAPP` | Support number (digits with country code) shown in the apps |

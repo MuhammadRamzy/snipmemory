@@ -1,7 +1,8 @@
 # Working on SnipMemory
 
-- Stack: Cloudflare Worker (Hono, `worker/src`) + D1 + R2, and a React 19 SPA (`web/src`) built by Vite with `@cloudflare/vite-plugin`. There is no Next.js in this project any more.
-- Schema changes go in a **new** numbered file in `migrations/`. Never edit an applied migration.
-- Every salon-scoped route must use `salonAccess(...)` and filter by `c.get('access').salon.id`.
-- Before committing, run `npm run typecheck` and `npm test`; both must pass. Tests run inside workerd and apply all migrations.
-- Read `docs/ARCHITECTURE.md` for the access model, flows and data model, and `docs/BUSINESS_PLAN.md` for product intent.
+- Product: POS + ERP for Indian salons. Two PWAs (`/owner`, `/staff`) plus `/admin`, all served by one Cloudflare Worker (Hono + D1 + R2). No payment gateway, SMS or email providers — keep it that way unless asked.
+- Users are barbers with little tech experience: big touch targets, bottom sheets (never `window.confirm`), PIN pads, plain words (udhaar, galla, kharcha). Wrap every UI string in `t()` from `web/src/lib/i18n.ts`.
+- Bill maths lives in `shared/billing.ts` and is used by both the Worker and the SPA — change it in one place and keep the tests green.
+- Every `/api/shop/*` route must use `shopAccess(...)` and filter by `c.get('ctx').shop.id`. Enforce staff restrictions on the server, not just in the UI.
+- Schema changes go in a new numbered file in `migrations/`; never edit an applied migration.
+- Before committing: `npm run typecheck` and `npm test` must pass.
