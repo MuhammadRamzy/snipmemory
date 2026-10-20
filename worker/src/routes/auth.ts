@@ -26,6 +26,12 @@ export function assertStrongPin(pin: string): void {
   }
 }
 
+/** 6 tries per 15 minutes and 20 per day per number: a 4-digit PIN would take years to guess. */
+export async function pinAttemptLimit(db: D1Database, phone: string): Promise<void> {
+  await rateLimit(db, `login:${phone}`, 6, 15 * MINUTE);
+  await rateLimit(db, `login-day:${phone}`, 20, DAY);
+}
+
 export function indianPhone(input: string): string {
   const phone = normalizePhone(input, 'IN');
   if (!phone || (phone.startsWith('+91') && phone.length !== 13)) throw badRequest('Enter a valid 10-digit mobile number.');
@@ -117,6 +123,8 @@ auth.post('/signup', async (c) => {
   const db = c.env.DB;
   let user = await first<UserRow>(db, 'SELECT * FROM users WHERE phone = ?', phone);
   if (user) {
+    // Signing up with a registered number checks its PIN — limit it exactly like login.
+    await pinAttemptLimit(db, phone);
     // Existing number (e.g. a barber opening their own shop): the PIN must match.
     if (!(await verifySecret(input.pin, user.pin_hash))) {
       throw conflict('This number is already registered. Log in, or use your existing PIN to add a new shop.', 'phone_taken');
@@ -138,7 +146,7 @@ auth.post('/login', async (c) => {
   const input = await body(c, z.object({ phone: phoneField, pin: anyPin, app: z.enum(['owner', 'staff']) }));
   const phone = indianPhone(input.phone);
   await rateLimit(c.env.DB, `login-ip:${clientIp(c)}`, 30, 15 * MINUTE);
-  await rateLimit(c.env.DB, `login:${phone}`, 6, 15 * MINUTE);
+  await pinAttemptLimit(c.env.DB, phone);
   const user = await first<UserRow>(c.env.DB, 'SELECT * FROM users WHERE phone = ?', phone);
   const ok = await verifySecret(input.pin, user?.pin_hash ?? 'pbkdf2$100000$00$00');
   if (!user || !ok || user.disabled_at) throw unauthorized('Wrong mobile number or PIN.');

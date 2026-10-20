@@ -252,6 +252,15 @@ customers.post('/:id/ledger', shopAccess('any'), async (c) => {
 // ---------------------------------------------------------------------------
 const MAX_PHOTO = 4 * 1024 * 1024;
 
+function safeNote(raw: string | undefined): string | null {
+  if (!raw) return null;
+  try {
+    return decodeURIComponent(raw).slice(0, 200);
+  } catch {
+    return null;
+  }
+}
+
 customers.post('/:id/photos', shopAccess('any'), async (c) => {
   const ctx = c.get('ctx');
   requireCap(ctx, 'photos');
@@ -273,7 +282,7 @@ customers.post('/:id/photos', shopAccess('any'), async (c) => {
     c.req.header('x-bill-id') ?? null,
     key,
     bytes.byteLength,
-    c.req.header('x-note') ? decodeURIComponent(c.req.header('x-note')!).slice(0, 200) : null,
+    safeNote(c.req.header('x-note')),
     now(),
   );
   return c.json({ photo: { id, url: `/api/media/${id}` } }, 201);

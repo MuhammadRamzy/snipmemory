@@ -18,9 +18,6 @@ publicApi.get('/bills/:token', async (c) => {
   const shop = await first<ShopRow>(c.env.DB, 'SELECT * FROM shops WHERE id = ?', bill.shop_id);
   if (!shop) throw notFound('Bill');
   const items = await all<BillItemRow>(c.env.DB, 'SELECT * FROM bill_items WHERE bill_id = ? ORDER BY rowid', bill.id);
-  const balance = bill.customer_id
-    ? await first<{ balance: number }>(c.env.DB, 'SELECT balance FROM customers WHERE id = ?', bill.customer_id)
-    : null;
   return c.json({
     shop: {
       name: shop.name,
@@ -46,7 +43,6 @@ publicApi.get('/bills/:token', async (c) => {
       due: bill.due,
       cancelled: Boolean(bill.voided_at),
     },
-    customerBalance: balance?.balance ?? null,
   });
 });
 

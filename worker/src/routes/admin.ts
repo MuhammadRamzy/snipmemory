@@ -16,6 +16,8 @@ admin.post('/login', async (c) => {
   const input = await body(c, z.object({ phone: phoneField, password: z.string().min(1).max(200) }));
   await rateLimit(c.env.DB, `admin-login:${clientIp(c)}`, 10, 15 * MINUTE);
   const phone = indianPhone(input.phone);
+  await rateLimit(c.env.DB, `admin-login:${phone}`, 5, 15 * MINUTE);
+  await rateLimit(c.env.DB, `admin-login-day:${phone}`, 20, DAY);
   const user = await first<UserRow>(c.env.DB, 'SELECT * FROM users WHERE phone = ? AND is_platform_admin = 1 AND disabled_at IS NULL', phone);
   const ok = await verifySecret(input.password, user?.password_hash ?? 'pbkdf2$100000$00$00');
   if (!user || !ok) throw unauthorized('Wrong phone or password.');

@@ -22,7 +22,6 @@ interface PublicBillData {
     due: number;
     cancelled: boolean;
   };
-  customerBalance: number | null;
 }
 
 /** The bill a customer opens from WhatsApp. `?print=1` prints a 58mm/80mm thermal-friendly receipt. */
